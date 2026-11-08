@@ -406,7 +406,9 @@ export function resolveSlide(deck: Deck, slide: Slide, index = 0): ResolvedSlide
         fontSize: 200,
         lineHeightPx: 200 * lh,
         letterSpacing: 0,
-        color: colorOf(theme, composition === "editorial" ? "text3" : "sectionBg"),
+        // 一律用 text3：在深色章节底上呈中灰，是"水印"式的低调存在。
+        // 早先用 sectionBg 做色，结果和底色相同 = 画了个看不见的元素。
+        color: colorOf(theme, "text3"),
         fontFace: theme.fonts.display ?? theme.fonts.zh,
         bold: true,
         align: "right",
