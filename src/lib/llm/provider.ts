@@ -10,6 +10,7 @@
  * 无 Key 时自动进入 mock：不联网、CI 可跑。
  */
 import { z } from "zod";
+import { readEnv, readEnvNum } from "@/lib/runtime/env";
 
 export interface LlmConfig {
   provider: string;
@@ -21,13 +22,14 @@ export interface LlmConfig {
 }
 
 export function getConfig(): LlmConfig {
+  // 走 readEnv：浏览器（纯静态构建）里没有 process，直接读会炸
   return {
-    provider: process.env.LLM_PROVIDER ?? "mock",
-    baseUrl: (process.env.LLM_BASE_URL ?? "").replace(/\/$/, ""),
-    apiKey: process.env.LLM_API_KEY ?? "",
-    model: process.env.LLM_MODEL ?? "",
-    maxTokens: Number(process.env.LLM_MAX_TOKENS ?? 60000),
-    timeoutMs: Number(process.env.LLM_TIMEOUT_MS ?? 120000),
+    provider: readEnv("LLM_PROVIDER") ?? "mock",
+    baseUrl: (readEnv("LLM_BASE_URL") ?? "").replace(/\/$/, ""),
+    apiKey: readEnv("LLM_API_KEY") ?? "",
+    model: readEnv("LLM_MODEL") ?? "",
+    maxTokens: readEnvNum("LLM_MAX_TOKENS", 60000),
+    timeoutMs: readEnvNum("LLM_TIMEOUT_MS", 120000),
   };
 }
 

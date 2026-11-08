@@ -4,22 +4,17 @@ import { useEffect, useState } from "react";
 import { Check, Cpu, Palette, RefreshCw, Type, X } from "lucide-react";
 import { Card, SectionLabel, Spinner, StatusPill, cx } from "@/components/ui";
 import { FONT_WHITELIST, ALLOWED_FONT_NAMES } from "@/lib/ir/constants";
+import {
+  fetchConnectivity,
+  testConnectivity,
+  isStaticBuild,
+  type ConnectivityInfo,
+  type ConnectivityTest,
+} from "@/lib/runtime/client";
 
-interface Cfg {
-  provider: string;
-  baseUrl: string;
-  model: string;
-  mock: boolean;
-  hasKey: boolean;
-}
+type Cfg = ConnectivityInfo;
 
-interface TestResult {
-  ok: boolean;
-  mock: boolean;
-  model: string;
-  latencyMs: number;
-  message: string;
-}
+interface TestResult extends ConnectivityTest {}
 
 export default function SettingsPage() {
   const [cfg, setCfg] = useState<Cfg | null>(null);
@@ -28,8 +23,7 @@ export default function SettingsPage() {
   const [fonts, setFonts] = useState<{ name: string; ok: boolean }[]>([]);
 
   useEffect(() => {
-    fetch("/api/connectivity")
-      .then((r) => r.json())
+    fetchConnectivity()
       .then(setCfg)
       .catch(() => setCfg(null));
   }, []);
@@ -51,8 +45,7 @@ export default function SettingsPage() {
     setBusy(true);
     setResult(null);
     try {
-      const res = await fetch("/api/connectivity", { method: "POST" });
-      setResult(await res.json());
+      setResult(await testConnectivity());
     } catch (e) {
       setResult({ ok: false, mock: false, model: "-", latencyMs: 0, message: (e as Error).message });
     } finally {
@@ -69,6 +62,12 @@ export default function SettingsPage() {
         <p className="mt-1.5 text-[13px] text-muted">
           Key 只存在服务端（.env），不会进入前端 bundle、日志或 prompt。
         </p>
+        {isStaticBuild() && (
+          <div className="mt-3 rounded-control border border-[rgb(214_214_255)] bg-[rgb(var(--brand-soft))] px-3 py-2.5 text-[12px] text-[rgb(var(--brand-strong))]">
+            当前是**静态演示版**（GitHub Pages）：没有服务器，固定走本地 fixture，草稿保存在你自己的浏览器里。
+            要接真实模型，请自托管或部署到 Vercel —— Key 绝不能进浏览器，这是设计红线。
+          </div>
+        )}
       </div>
 
       {/* 模型 */}

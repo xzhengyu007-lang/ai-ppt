@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SlideFrame } from "@/components/slide/SlideCanvas";
 import { resolveDeck } from "@/lib/layout/resolve";
@@ -12,11 +12,12 @@ import { LAYOUTS } from "@/lib/layout/definitions";
 import { recommendLayouts, type SlideSpec } from "@/lib/llm/layout-assign";
 import { exportDeckPptx, exportSlidePng, downloadBlob } from "@/lib/export/client";
 import type { Slide } from "@/lib/ir/schema";
+import { getDeck, updateDeck, regenerateSlide } from "@/lib/runtime/client";
 
-export default function EditorPage() {
-  const params = useParams<{ id: string }>();
+function EditorInner() {
   const router = useRouter();
-  const id = params.id;
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id") ?? "";
 
   const {
     deck,
@@ -54,15 +55,20 @@ export default function EditorPage() {
   // 载入草稿
   useEffect(() => {
     let alive = true;
-    fetch(`/api/decks/${id}`)
-      .then((r) => r.json())
+    if (!id) {
+      setError("链接缺少 id 参数（形如 /editor?id=xxx）");
+      setLoading(false);
+      return;
+    }
+    getDeck(id)
       .then((d) => {
         if (!alive) return;
-        if (d.error) throw new Error(d.error);
-        init(d.deck);
+        if (!d) throw new Error("草稿不存在，可能已被清理");
+        init(d);
         setLoading(false);
       })
       .catch((e) => {
+        if (!alive) return;
         setError((e as Error).message);
         setLoading(false);
       });
@@ -87,14 +93,8 @@ export default function EditorPage() {
     if (!deck || !dirty) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/decks/${id}`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ deck }),
-      });
-      const data = await res.json();
-      if (data.savedAt) markSaved(data.savedAt);
-      else setError(data.error ?? "保存失败");
+      const savedAt = await updateDeck(id, deck);
+      markSaved(savedAt);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -165,18 +165,12 @@ export default function EditorPage() {
     setExportMsg("正在重生成这一页…");
     try {
       const title = slide.slots.title?.kind === "text" ? slide.slots.title.text : deck.meta.title;
-      const res = await fetch("/api/regenerate", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          topic: deck.meta.title,
-          themeId: deck.meta.themeId,
-          outline: [{ title, role: slide.layout, point: "" }],
-        }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      const newSlide = data.slide as Slide;
+      const newSlide = (await regenerateSlide(
+        deck.meta.title,
+        deck.meta.themeId,
+        title,
+        slide.layout
+      )) as Slide;
       replaceSlide(current, { ...newSlide, id: slide.id });
       setExportMsg("已重生成这一页（可撤销）");
     } catch (e) {
@@ -486,5 +480,18 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <div className="mb-2 section-label">{title}</div>
       {children}
     </div>
+  );
+}
+
+/** 静态导出要求：useSearchParams 必须包在 Suspense 里 */
+export default function EditorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-[1400px] px-6 py-10 text-sm text-muted">载入编辑器…</div>
+      }
+    >
+      <EditorInner />
+    </Suspense>
   );
 }

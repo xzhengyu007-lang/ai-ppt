@@ -21,6 +21,15 @@ import { buildLayoutCoverageDeck, buildMockDeck } from "@/lib/fixtures/mock-deck
 import { resolveSlide } from "@/lib/layout/resolve";
 import { THEMES } from "@/lib/theme/themes";
 import { deckSchema, type Deck } from "@/lib/ir/schema";
+import {
+  createSampleDeck,
+  editorHref,
+  fetchConnectivity,
+  listDecks,
+  requestOutline,
+  streamGenerate,
+  type StreamEvent,
+} from "@/lib/runtime/client";
 
 interface OutlineItem {
   title: string;
@@ -64,13 +73,11 @@ export default function HomePage() {
   const progressRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/connectivity")
-      .then((r) => r.json())
+    fetchConnectivity()
       .then((c) => setIsMock(Boolean(c.mock)))
       .catch(() => setIsMock(true));
-    fetch("/api/decks")
-      .then((r) => r.json())
-      .then((d) => setRecent(d.decks ?? []))
+    listDecks()
+      .then((d) => setRecent(d))
       .catch(() => {});
   }, []);
 
@@ -96,15 +103,8 @@ export default function HomePage() {
     setProgress([]);
     setStage("outline");
     try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ stage: "outline", topic, themeId, slideCount }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setOutline(data.outline ?? []);
-      if (data.mock) setIsMock(true);
+      const items = await requestOutline(topic, themeId, slideCount);
+      setOutline(items);
     } catch (e) {
       setError((e as Error).message);
       setStage("idle");
@@ -118,43 +118,15 @@ export default function HomePage() {
     setStage("deck");
 
     try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ stage: "deck", topic, themeId, slideCount, outline }),
+      const deckId = await streamGenerate({ topic, themeId, slideCount, outline }, (evt: StreamEvent) => {
+        if (evt.type === "step") setProgress((p) => [...p, `▸ ${evt.message}`]);
+        else if (evt.type === "slide")
+          setProgress((p) => [...p, `  ${String(evt.index + 1).padStart(2, "0")}/${evt.total} · ${evt.layout}`]);
+        else if (evt.type === "warning") setProgress((p) => [...p, `⚠ ${evt.message}`]);
+        else if (evt.type === "usage") setTokenUsed(evt.totalTokens);
+        else if (evt.type === "error") setError(evt.message);
       });
-      if (!res.body) throw new Error("服务端没有返回数据流");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      let deckId: string | null = null;
-
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const chunks = buf.split("\n\n");
-        buf = chunks.pop() ?? "";
-        for (const chunk of chunks) {
-          const line = chunk.split("\n").find((l) => l.startsWith("data: "));
-          if (!line) continue;
-          const evt = JSON.parse(line.slice(6));
-          if (evt.type === "step") setProgress((p) => [...p, `▸ ${evt.message}`]);
-          if (evt.type === "slide")
-            setProgress((p) => [
-              ...p,
-              `  ${String(evt.index + 1).padStart(2, "0")}/${evt.total} · ${evt.layout}`,
-            ]);
-          if (evt.type === "warning") setProgress((p) => [...p, `⚠ ${evt.message}`]);
-          if (evt.type === "usage") setTokenUsed(evt.totalTokens);
-          if (evt.type === "saved") deckId = evt.id;
-          if (evt.type === "error") setError(evt.message);
-        }
-      }
-
-      if (deckId) router.push(`/editor/${deckId}`);
-      else if (!error) setError("生成结束但没有拿到草稿 ID");
+      router.push(editorHref(deckId));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -163,19 +135,17 @@ export default function HomePage() {
   }
 
   async function quickMockDeck() {
-    const deck: Deck = buildMockDeck({ topic, themeId, slideCount });
-    if (!deckSchema.safeParse(deck).success) {
-      setError("本地 fixture 未通过 IR 校验");
-      return;
+    try {
+      const deck: Deck = buildMockDeck({ topic, themeId, slideCount });
+      if (!deckSchema.safeParse(deck).success) {
+        setError("本地 fixture 未通过 IR 校验");
+        return;
+      }
+      const id = await createSampleDeck(topic, themeId, slideCount);
+      router.push(editorHref(id));
+    } catch (e) {
+      setError((e as Error).message);
     }
-    const res = await fetch("/api/decks", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ deck }),
-    });
-    const data = await res.json();
-    if (data.id) router.push(`/editor/${data.id}`);
-    else setError(data.error ?? "保存失败");
   }
 
   return (
@@ -543,7 +513,7 @@ export default function HomePage() {
             {recent.map((d) => {
               const t = THEMES.find((x) => x.id === d.themeId) ?? THEMES[0];
               return (
-                <Link key={d.id} href={`/editor/${d.id}`} className="group">
+                <Link key={d.id} href={editorHref(d.id)} className="group">
                   <Card lift className="p-3.5 h-full">
                     <div className="flex items-start gap-3">
                       <span
