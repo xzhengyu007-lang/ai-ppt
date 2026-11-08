@@ -41,6 +41,8 @@ function TextBlockView({ block }: { block: ResolvedTextBlock }) {
             color: `#${block.color}`,
             textAlign: block.align,
             letterSpacing: block.letterSpacing || undefined,
+            // 等宽数字：KPI 与数据页的 4/9 不下沉、对齐更稳（对中文无影响）
+            fontVariantNumeric: "tabular-nums",
             whiteSpace: "pre",
             // 预折行：不接受浏览器再换行
             overflow: "visible",

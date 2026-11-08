@@ -211,7 +211,7 @@ export function resolveSlide(deck: Deck, slide: Slide): ResolvedSlide {
           slot,
           content.text,
           slot.maxLines,
-          slot.role === "eyebrow" ? 0.5 : 0
+          slot.role === "eyebrow" ? 1.2 : 0
         );
         if (block.fitLevel === "overflow") {
           warnings.push(`槽位 ${slot.id} 文字溢出（已缩到最小字号仍放不下）`);
@@ -299,7 +299,7 @@ export function resolveSlide(deck: Deck, slide: Slide): ResolvedSlide {
             accepts: ["text"],
             box: { x: x + 24, y: slot.box.y + 96, w: cardW - 48, h: 56 },
             padding: 0,
-            fontSize: 14,
+            fontSize: 12,
             colorKey: "text2",
           };
           elements.push({
