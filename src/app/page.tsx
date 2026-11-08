@@ -144,6 +144,7 @@ export default function HomePage() {
       const id = await createSampleDeck(topic, themeId, slideCount);
       router.push(editorHref(id));
     } catch (e) {
+      console.error("[quickMockDeck]", e);
       setError((e as Error).message);
     }
   }

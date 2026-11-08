@@ -1,36 +1,52 @@
 # AI PPT 生成网站
 
+**在线访问（永久地址，无需任何 Key）：** <https://xzhengyu007-lang.github.io/ai-ppt/>
+**源码仓库：** <https://github.com/xzhengyu007-lang/ai-ppt>
+
 输入主题或大纲 → 选模板 → 调大模型（用户自带 Key）→ 生成整套幻灯片 → 浏览器实时预览并可微调 → **一键导出可编辑的 .pptx**。
 
 预览与导出读的是**同一份 Slide IR**。导出的 pptx 里文字是可编辑的文本、图表是可编辑的原生图表，不是截图。
+
+> 线上那个是**静态演示版**：全部逻辑跑在浏览器里（mock 流水线 + localStorage 存草稿 + 浏览器端导出 pptx），
+> 所以没有服务器、没有 Key、也不会有隐私外泄。要接真实模型请看下面「部署与分享」。
 
 ---
 
 ## 部署与分享
 
-仓库：<https://github.com/xzhengyu007-lang/ai-ppt>（私有；要公开请自行改可见性）
+### 方式一 · GitHub Pages（已配好，永久在线）
 
-### 方式一 · Vercel（推荐，永久地址）
+推送 `main` 就会自动构建并发布静态演示版：
+
+- 地址：<https://xzhengyu007-lang.github.io/ai-ppt/>
+- 工作流：`.github/workflows/deploy-pages.yml`（安装 → 跑测试 → `node scripts/build-static.mjs` → 发布 `out/`）
+
+**静态版的能力边界**：生成走浏览器内的 mock 流水线、草稿存 `localStorage`、导出 pptx/PNG 在浏览器完成。
+**没有真实模型** —— 这不是省事，而是「密钥四不入」红线的必然结果：静态站没有服务端，Key 无处可藏。
+
+### 方式二 · Vercel（要接真实模型就用这个）
 
 1. Vercel → New Project → 导入该仓库；
-2. 框架自动识别 Next.js，**不需要任何环境变量**（默认就是 mock 模式，功能完整）；
-3. 若要接真实模型，在 Vercel 环境变量里填 `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL`。
+2. 框架自动识别 Next.js，填环境变量 `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL`；
+3. **把 `DATABASE_PATH` 设成 `/tmp/app.db`**：serverless 只有 `/tmp` 可写，且实例重启后草稿会丢。
 
-⚠️ **Vercel 上必须把 `DATABASE_PATH` 设成 `/tmp/app.db`**：serverless 只有 `/tmp` 可写，且**实例重启后草稿会丢**。
-需要持久化就换 Postgres/Turso 等托管库（改 `src/lib/storage/decks.ts` 一层即可）。导出 pptx 不受影响——它在浏览器端生成。
+要持久化就换 Postgres/Turso 等托管库（改 `src/lib/storage/decks.ts` 一层即可）。导出 pptx 不受影响——它始终在浏览器端生成。
 
-### 方式二 · 本地跑 + 临时公网地址（适合演示）
+### 方式三 · 本地跑 + 临时公网地址（演示用）
 
 ```bash
 pnpm build && pnpm start          # 生产模式，localhost:3000
 
-# 另一个终端：免账号的公网隧道（地址是临时的，进程关掉即失效）
+# 另一个终端：免账号公网隧道（临时，进程关掉即失效）
 cloudflared tunnel --url http://localhost:3000
-# 输出形如 https://xxx-yyy-zzz.trycloudflare.com
 ```
 
-⚠️ **安全提醒**：本应用**没有鉴权**。公网暴露期间任何人可创建草稿、消耗你的模型额度。
-演示用完请立刻停掉隧道；长期对外请先加访问控制。
+⚠️ 本应用**没有鉴权**。公网暴露期间任何人可创建草稿、消耗你的模型额度；演示完请立刻停掉。
+
+### 两种部署怎么共用一套代码
+
+页面不直接调 `/api/*`，而是走 `src/lib/runtime/client.ts` 这一层：
+服务端模式转发到 API 路由，静态模式（`NEXT_PUBLIC_STATIC=1`）改为在浏览器内执行同一套流水线。
 
 ---
 
