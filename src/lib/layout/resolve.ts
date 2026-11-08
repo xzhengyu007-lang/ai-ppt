@@ -392,26 +392,33 @@ export function resolveSlide(deck: Deck, slide: Slide, index = 0): ResolvedSlide
     }
   }
 
-  // 章节页的大号页序（编辑排版 / 竖栏构图才有）——高级模板的常见元素
+  // 章节页的大号页序（非基线构图才有）——高级模板的常见元素
   if (slide.layout === "section" && composition !== "standard" && index > 0) {
     const numeral = String(index + 1).padStart(2, "0");
-    const lh = 1.0;
+    // 页序的位置与字号随构图变化：编辑排版靠右压大，竖栏靠左收敛，色带/卡片缩小到右下角
+    const geo =
+      composition === "editorial"
+        ? { box: { x: 860, y: 150, w: 340, h: 320 }, size: 210, align: "right" as const }
+        : composition === "rail"
+          ? { box: { x: 120, y: 470, w: 260, h: 180 }, size: 150, align: "left" as const }
+          : { box: { x: 980, y: 560, w: 200, h: 120 }, size: 96, align: "right" as const };
+
     elements.push({
       kind: "text",
       id: "section-numeral",
       role: "caption",
-      box: { x: 880, y: 168, w: 320, h: 300 },
+      box: geo.box,
       block: {
         lines: [numeral],
-        fontSize: 200,
-        lineHeightPx: 200 * lh,
+        fontSize: geo.size,
+        lineHeightPx: geo.size,
         letterSpacing: 0,
         // 一律用 text3：在深色章节底上呈中灰，是"水印"式的低调存在。
         // 早先用 sectionBg 做色，结果和底色相同 = 画了个看不见的元素。
         color: colorOf(theme, "text3"),
         fontFace: theme.fonts.display ?? theme.fonts.zh,
         bold: true,
-        align: "right",
+        align: geo.align,
         valign: "middle",
         fitLevel: "ok",
         visibleLines: 1,

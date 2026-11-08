@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Check, Pause, Play } from "lucide-react";
 import { SlideFrame } from "@/components/slide/SlideCanvas";
 import { Card, SectionLabel, StatusPill, cx } from "@/components/ui";
+import { LazyThumb } from "@/components/ui/LazyThumb";
 import { buildLayoutCoverageDeck } from "@/lib/fixtures/mock-deck";
 import { resolveDeck } from "@/lib/layout/resolve";
 import { THEMES } from "@/lib/theme/themes";
@@ -149,8 +150,13 @@ export default function TemplatesPage() {
               className="group overflow-hidden rounded-card border border-line bg-card text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card"
             >
               <div className="bg-sunken py-2.5 grid place-items-center">
-                <div className="pointer-events-none overflow-hidden rounded-[3px] ring-1 ring-black/5">
-                  <SlideFrame slide={slide} scale={0.21} />
+                <div className="pointer-events-none">
+                  <LazyThumb
+                    slide={slide}
+                    scale={0.21}
+                    background={theme.tokens.colors.background}
+                    accent={theme.tokens.colors.accent}
+                  />
                 </div>
               </div>
               <div className="flex items-center justify-between px-3 py-2">
