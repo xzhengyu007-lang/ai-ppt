@@ -28,3 +28,11 @@ Thumbs.db
 
 # 调研期工作区（证据已内联进 docs）
 .research/
+
+# pnpm 本地 store（沙箱友好）
+.pnpm-store/
+.pnpm-cache/
+
+# 数据库与草稿
+data/
+

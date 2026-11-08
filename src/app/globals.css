@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-ui-zh: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  --font-slide-zh: "Microsoft YaHei", "Noto Sans SC", sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-ui-zh);
+  background: #f6f7f9;
+  color: #111318;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 幻灯片画布里的文字要按 webfont/系统字体渲染，避免 UI 字体串味 */
+.slide-surface {
+  font-family: var(--font-slide-zh);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d3d7de;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b9bfc9;
+}

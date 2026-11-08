@@ -1,0 +1,41 @@
+{
+  "name": "ai-ppt",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI PPT generation site: template system + LLM API + editable export",
+  "packageManager": "pnpm@11.1.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import ./scripts/ts-alias.mjs scripts/test.ts",
+    "test:watch": "node --watch --import ./scripts/ts-alias.mjs scripts/test.ts",
+    "schema": "tsx scripts/export-schema.ts",
+    "validate": "python scripts/validate_pptx.py",
+    "eval": "tsx scripts/eval.ts"
+  },
+  "dependencies": {
+    "jszip": "^3.10.2",
+    "lucide-react": "^1.70.0",
+    "next": "15.5.29",
+    "pptxgenjs-plus": "^4.3.6",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.6.7",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "3.4.17",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}

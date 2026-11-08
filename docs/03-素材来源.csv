@@ -1,0 +1,19 @@
+URL,许可证,获取日期,用途,是否可商用
+(无) 本仓库代码生成,自有代码,2026-11-09,12 套主题与 8 个版式全部由代码生成，未抓取任何商业模板站（稻壳/优品/千图/包图/Slidesgo/Canva 等）,是
+(无) 系统字体,微软雅黑 Microsoft YaHei / 等线 DengXian / 宋体 SimSun,2026-11-09,导出侧只写字体名不嵌字体；不随本产品分发字体文件,是（仅引用字体名）
+https://fonts.google.com/noto/specimen/Noto+Sans+SC,SIL Open Font License 1.1 (OFL),2026-11-09,跨平台中文字体=思源黑体族；本机已安装，未打包分发；若将来自托管需保留 OFL 声明,是
+https://lucide.dev,ISC,2026-11-09,界面图标（lucide-react）,是
+https://www.npmjs.com/package/pptxgenjs-plus,MIT,2026-11-09,IR → pptx 渲染引擎（浏览器端）,是
+https://www.npmjs.com/package/jszip,MIT,2026-11-09,导出后处理：重打包压缩 + 部件修补,是
+https://www.npmjs.com/package/next,MIT,2026-11-09,应用框架,是
+https://www.npmjs.com/package/react,MIT,2026-11-09,UI 运行时,是
+https://www.npmjs.com/package/zod,MIT,2026-11-09,Slide IR 校验 + JSON Schema 导出,是
+https://www.npmjs.com/package/zustand,MIT,2026-11-09,编辑器状态与快照式撤销/重做,是
+https://www.npmjs.com/package/tailwindcss,MIT,2026-11-09,样式,是
+https://www.npmjs.com/package/tsx,MIT,2026-11-09,开发期脚本运行（构建 CI 时用）,是
+(无) 图片素材,无,2026-11-09,本期不使用任何外部图片；image 槽位为纯图形占位块（虚线框+说明），AI 生图默认关闭,是
+https://github.com/icip-cas/PPTAgent,MIT,2026-11-09,只读参考其两阶段 edit-based 建模思路；未拷贝任何代码,是（仅参考）
+https://github.com/hugohe3/ppt-master,MIT,2026-11-09,只读参考其确认闸门与 spec/spec_lock 设计；未拷贝代码,是（仅参考）
+https://github.com/pipipi-pikachu/PPTist,AGPL-3.0,2026-11-09,只读参考编辑器交互模型（缩放/吸附/快照撤销）；AGPL 故一行代码都未拷贝,否（禁拷代码，仅设计参考）
+https://github.com/tldraw/tldraw,自定义商业许可（禁生产环境+水印+回传）,2026-11-09,仅评估后否决，未引入、未拷贝,否
+https://github.com/chuspeeism/dashi-ppt-skill,AGPL-3.0,2026-11-09,只读参考其字数预算中英分档；未拷贝代码,否（禁拷代码，仅设计参考）
