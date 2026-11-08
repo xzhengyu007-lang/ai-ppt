@@ -156,7 +156,7 @@ export function bulletItemBoxes(
 }
 
 /** 把一页 IR 解析成最终元素列表 */
-export function resolveSlide(deck: Deck, slide: Slide): ResolvedSlide {
+export function resolveSlide(deck: Deck, slide: Slide, index = 0): ResolvedSlide {
   const theme = deck.theme;
   // 构图语言来自模板注册表（deck 只存 tokens，构图属于模板定义）
   let composition: CompositionId = "standard";
@@ -392,6 +392,31 @@ export function resolveSlide(deck: Deck, slide: Slide): ResolvedSlide {
     }
   }
 
+  // 章节页的大号页序（编辑排版 / 竖栏构图才有）——高级模板的常见元素
+  if (slide.layout === "section" && composition !== "standard" && index > 0) {
+    const numeral = String(index + 1).padStart(2, "0");
+    const lh = 1.0;
+    elements.push({
+      kind: "text",
+      id: "section-numeral",
+      role: "caption",
+      box: { x: 880, y: 168, w: 320, h: 300 },
+      block: {
+        lines: [numeral],
+        fontSize: 200,
+        lineHeightPx: 200 * lh,
+        letterSpacing: 0,
+        color: colorOf(theme, composition === "editorial" ? "text3" : "sectionBg"),
+        fontFace: theme.fonts.display ?? theme.fonts.zh,
+        bold: true,
+        align: "right",
+        valign: "middle",
+        fitLevel: "ok",
+        visibleLines: 1,
+      },
+    });
+  }
+
   // 图库素材署名：并进 caption（没有 caption 就补一个）
   if (pendingCredit) {
     const captionSlot = layout.slots.find((s) => s.id === "caption");
@@ -428,7 +453,7 @@ export function resolveSlide(deck: Deck, slide: Slide): ResolvedSlide {
 }
 
 export function resolveDeck(deck: Deck): ResolvedSlide[] {
-  return deck.slides.map((s) => resolveSlide(deck, s));
+  return deck.slides.map((s, i) => resolveSlide(deck, s, i));
 }
 
 /** 用于字数统计与纯文本提取（不含标记） */

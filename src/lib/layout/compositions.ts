@@ -83,6 +83,8 @@ export function composeLayout(
       out = decor(out, [
         { kind: "rule", box: { x: 48, y: 120, w: 3, h: 420 }, colorKey: "accent" },
         { kind: "rule", box: { x: 80, y: 96, w: 120, h: 1 }, colorKey: "border" },
+        // 页眉处一个小实心方块，给竖线一个"起点"，避免线条悬空
+        { kind: "block", box: { x: 48, y: 100, w: 20, h: 20 }, colorKey: "accent" },
       ]);
       break;
     }
@@ -121,6 +123,8 @@ export function composeLayout(
       const bandH = 176;
       out = decor(out, [
         { kind: "block", box: { x: 0, y: bandTop, w: 1280, h: bandH }, colorKey: "sectionBg" },
+        // 色带下沿压一条强调色发丝线：把"一整块色"收出边界，避免糊成一片
+        { kind: "rule", box: { x: 0, y: bandTop + bandH, w: 1280, h: 4 }, colorKey: "accent" },
       ]);
       if (title) {
         out = replace(
@@ -140,6 +144,8 @@ export function composeLayout(
       out = decor(out, [
         { kind: "block", box: { x: 0, y: 0, w: 14, h: 720 }, colorKey: "accent" },
         { kind: "block", box: { x: 14, y: 0, w: 3, h: 720 }, colorKey: "primary" },
+        // 竖栏右下方留一个短刻度，呼应左侧色条又不抢视线
+        { kind: "bar", box: { x: 48, y: 664, w: 40, h: 4 }, colorKey: "accent", radius: 2 },
       ]);
       if (title) out = replace(out, "title", shift(title, 34, 0));
       if (body) out = replace(out, "body", shift(body, 34, 0));

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { SlideFrame } from "@/components/slide/SlideCanvas";
 import { Card, EmptyState, Kbd, SectionLabel, Spinner, StatusPill, cx } from "@/components/ui";
+import { LazyThumb } from "@/components/ui/LazyThumb";
 import { buildLayoutCoverageDeck, buildMockDeck } from "@/lib/fixtures/mock-deck";
 import { resolveSlide } from "@/lib/layout/resolve";
 import { THEMES } from "@/lib/theme/themes";
@@ -461,8 +462,13 @@ export default function HomePage() {
                 )}
               >
                 <div className="relative bg-sunken py-2.5 grid place-items-center">
-                  <div className="pointer-events-none rounded-[3px] overflow-hidden ring-1 ring-black/5 shadow-sm">
-                    <SlideFrame slide={slide} scale={0.2} />
+                  <div className="pointer-events-none">
+                    <LazyThumb
+                      slide={slide}
+                      scale={0.2}
+                      background={theme.tokens.colors.background}
+                      accent={theme.tokens.colors.accent}
+                    />
                   </div>
                   {active && (
                     <span className="absolute top-2 right-2 grid place-items-center w-5 h-5 rounded-full bg-brand text-white shadow">
