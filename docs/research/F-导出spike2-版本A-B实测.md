@@ -81,6 +81,20 @@ FIXED out-plus-fixed.pptx
 
 **这就是阶段 2 `src/renderer/pptx/postprocess.ts` 的原型**：库负责大部分、我们负责它做错的那一小块，且这一小块是**可测的**。
 
+### 1.5 意外收获：pptxgenjs 写出的包**完全没压缩**，后处理顺手砍掉 75% 体积
+
+后处理把 notesMaster 换掉时用 `JSZip.generateAsync({compression:'DEFLATE'})` 重新打包，结果文件从 173 KB 掉到 48 KB。查了中央目录（Python `zipfile`，不是猜的）：
+
+```
+out-401.pptx          部件  68  原始 162.4 KB  压缩后 162.4 KB  方式: STORE=68
+out-plus.pptx         部件  50  原始 162.8 KB  压缩后 162.8 KB  方式: STORE=50
+out-plus-fixed.pptx   部件  52  原始 169.0 KB  压缩后  40.4 KB  方式: DEFLATE=50, STORE=2
+```
+
+**两个版本的 pptxgenjs 都是 100% STORE，一个字节都没压**（原始体积 = 压缩后体积）。我们重新打包后 **162.8 KB → 40.4 KB，−75%**，而部件与文本量完全不变（读回 14/14、697 个汉字备注、形状数一致）。
+
+对"浏览器一键下载 pptx"这个产品形态，这是**白拿的收益**：下载体积降 4 倍，代价只是后处理多一次 zip 重写。这条会写进阶段 2 的导出实现。
+
 ---
 
 ## 2. 三套判据的分工（阶段 2 要照这个建 CI）
