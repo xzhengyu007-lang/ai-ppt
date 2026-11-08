@@ -1,0 +1,23 @@
+# NOTICE
+
+本产品/仓库包含来自第三方项目的内容或设计决策，按各自许可证要求署名如下。
+
+## presenton/presenton
+
+- 来源：https://github.com/presenton/presenton
+- 许可证：Apache License 2.0
+- 本仓库使用方式：**仅导入其模板的配色取值与字体性格**（读取 `templates/<id>/template.json` 的 `theme.colors` 与 `fonts` 键名），
+  在 `scripts/import-presenton.mjs` 中映射为本项目的主题 token，生成 `src/lib/theme/imported.ts`。
+- **未使用**：其 `merged_components` / `layouts` 的绝对定位元素树、其图片与字体文件。
+- 免责声明：Apache-2.0 第 7 条，本软件按"原样"提供，不作任何明示或默示担保。
+- 修改说明：导入结果经过数值归一化（颜色转 6 位十六进制）、亮度合理性过滤、字体替换（Google 字体 → 中文白名单字体）、
+  以及构图指派。即原始素材已被修改。
+
+## 其他依赖
+
+见 `package.json`；所有运行时依赖均为 MIT / ISC / Apache-2.0。
+
+## 图库素材
+
+幻灯片中使用的配图来自 Wikimedia Commons，按图片逐个判定许可证（仅 CC0 / 公有领域 / CC BY / CC BY-SA），
+署名由程序自动写入页面图注。每次使用记录在 `docs/03-素材来源.csv`。
