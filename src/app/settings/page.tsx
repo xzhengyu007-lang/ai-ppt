@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check, Cpu, Palette, RefreshCw, Type, X } from "lucide-react";
+import { Card, SectionLabel, Spinner, StatusPill, cx } from "@/components/ui";
 import { FONT_WHITELIST, ALLOWED_FONT_NAMES } from "@/lib/ir/constants";
 
 interface Cfg {
@@ -32,15 +34,14 @@ export default function SettingsPage() {
       .catch(() => setCfg(null));
   }, []);
 
-  // 字体缺失检测：只查白名单，报告"本机有没有"
   useEffect(() => {
     const check = () => {
-      const rows = ALLOWED_FONT_NAMES.map((name) => ({
-        name,
-        // document.fonts.check 对系统字体也有效；16px 是为了让检测稳定
-        ok: document.fonts.check(`16px "${name}"`),
-      }));
-      setFonts(rows);
+      setFonts(
+        ALLOWED_FONT_NAMES.map((name) => ({
+          name,
+          ok: document.fonts.check(`16px "${name}"`),
+        }))
+      );
     };
     if (document.fonts?.ready) document.fonts.ready.then(check);
     else check();
@@ -53,13 +54,7 @@ export default function SettingsPage() {
       const res = await fetch("/api/connectivity", { method: "POST" });
       setResult(await res.json());
     } catch (e) {
-      setResult({
-        ok: false,
-        mock: false,
-        model: "-",
-        latencyMs: 0,
-        message: (e as Error).message,
-      });
+      setResult({ ok: false, mock: false, model: "-", latencyMs: 0, message: (e as Error).message });
     } finally {
       setBusy(false);
     }
@@ -68,96 +63,161 @@ export default function SettingsPage() {
   const missing = fonts.filter((f) => !f.ok);
 
   return (
-    <div className="mx-auto max-w-[900px] px-6 py-8 space-y-8">
+    <div className="mx-auto max-w-[1000px] px-6 py-10 space-y-5">
       <div>
-        <h1 className="text-[22px] font-semibold tracking-tight">设置</h1>
-        <p className="mt-1 text-sm text-ink-500">
+        <h1 className="text-[24px] font-semibold tracking-tight">设置</h1>
+        <p className="mt-1.5 text-[13px] text-muted">
           Key 只存在服务端（.env），不会进入前端 bundle、日志或 prompt。
         </p>
       </div>
 
-      {/* 模型配置 */}
-      <section className="rounded-xl border border-ink-100 bg-white p-5">
-        <h2 className="text-sm font-semibold">模型配置（BYOK）</h2>
-        <div className="mt-3 grid gap-2 text-sm">
-          <Row label="Provider" value={cfg?.provider ?? "-"} />
-          <Row label="Base URL" value={cfg?.baseUrl || "(未配置)"} />
-          <Row label="Model" value={cfg?.model || "(未配置)"} />
-          <Row
-            label="状态"
-            value={cfg?.mock ? "mock 模式（本地 fixture，不联网）" : "已配置真实 Key"}
-          />
+      {/* 模型 */}
+      <Card className="p-5">
+        <div className="flex items-center gap-2">
+          <Cpu size={15} className="text-brand-strong" />
+          <span className="panel-title">模型配置（BYOK）</span>
+          <div className="ml-auto">
+            {cfg ? (
+              cfg.mock ? (
+                <StatusPill tone="neutral">mock 模式 · 不联网</StatusPill>
+              ) : (
+                <StatusPill tone="ok">已配置真实 Key</StatusPill>
+              )
+            ) : (
+              <StatusPill tone="neutral">读取中…</StatusPill>
+            )}
+          </div>
         </div>
-        <div className="mt-4 flex items-center gap-3">
-          <button
-            onClick={runTest}
-            disabled={busy}
-            className="h-9 rounded-lg bg-ink-900 px-4 text-sm font-medium text-white disabled:opacity-40"
-          >
+
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <Field label="Provider" value={cfg?.provider ?? "-"} />
+          <Field label="Model" value={cfg?.model || "(未配置)"} />
+          <Field label="Base URL" value={cfg?.baseUrl || "(未配置)"} span />
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button onClick={runTest} disabled={busy} className="btn-primary">
+            {busy ? <Spinner /> : <RefreshCw size={13} />}
             {busy ? "测试中…" : "连通性测试"}
           </button>
           {result && (
-            <span className={`text-sm ${result.ok ? "text-green-700" : "text-red-600"}`}>
-              {result.ok ? "✓" : "✗"} {result.message}
-              {result.latencyMs > 0 && `（${result.latencyMs} ms）`}
-            </span>
+            <div
+              className={cx(
+                "flex items-center gap-2 rounded-control px-3 py-2 text-[12.5px] border",
+                result.ok
+                  ? "bg-[rgb(236_253_245)] border-[rgb(204_245_224)] text-[rgb(var(--ok))]"
+                  : "bg-[rgb(254_242_242)] border-[rgb(250_210_210)] text-[rgb(var(--danger))]"
+              )}
+            >
+              {result.ok ? <Check size={13} /> : <X size={13} />}
+              <span>{result.message}</span>
+              {result.latencyMs > 0 && (
+                <span className="font-mono text-[11px] opacity-70">{result.latencyMs} ms</span>
+              )}
+            </div>
           )}
         </div>
-        <p className="mt-3 text-xs text-ink-300">
-          改配置请复制 <code className="rounded bg-ink-100 px-1">.env.example</code> 为{" "}
-          <code className="rounded bg-ink-100 px-1">.env</code> 后填写 LLM_BASE_URL / LLM_API_KEY /
-          LLM_MODEL，重启 dev 服务生效。
-        </p>
-      </section>
 
-      {/* 字体检测 */}
-      <section className="rounded-xl border border-ink-100 bg-white p-5">
-        <h2 className="text-sm font-semibold">字体缺失检测</h2>
-        <p className="mt-1 text-xs text-ink-500">
-          pptx 只记录字体名、不嵌入字体。目标机器没有该字体时会被替换 → 行高变化 → 溢出。
-          所以只允许白名单字体。
+        <p className="mt-3 text-[11.5px] text-faint leading-relaxed">
+          改配置：复制 <code className="px-1 rounded bg-sunken font-mono">.env.example</code> 为{" "}
+          <code className="px-1 rounded bg-sunken font-mono">.env</code>，填{" "}
+          <code className="px-1 rounded bg-sunken font-mono">LLM_BASE_URL</code> /{" "}
+          <code className="px-1 rounded bg-sunken font-mono">LLM_API_KEY</code> /{" "}
+          <code className="px-1 rounded bg-sunken font-mono">LLM_MODEL</code>，重启 dev 服务生效。
+          不填 Key 就是 mock 模式，功能完全可用。
         </p>
-        <ul className="mt-3 grid gap-1.5 text-sm">
+      </Card>
+
+      {/* 字体 */}
+      <Card className="p-5">
+        <div className="flex items-center gap-2">
+          <Type size={15} className="text-brand-strong" />
+          <span className="panel-title">字体缺失检测</span>
+          <div className="ml-auto">
+            {missing.length === 0 ? (
+              <StatusPill tone="ok">白名单字体全部可用</StatusPill>
+            ) : (
+              <StatusPill tone="warn">{missing.length} 个缺失</StatusPill>
+            )}
+          </div>
+        </div>
+        <p className="mt-1.5 text-[11.5px] text-muted leading-relaxed">
+          pptx 只记录字体名、不嵌入字体。目标机器没有该字体时会被替换 → 行高变化 → 溢出。
+          所以主题只允许白名单字体。
+        </p>
+
+        <div className="mt-3.5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {fonts.map((f) => (
-            <li key={f.name} className="flex items-center gap-2">
-              <span className={f.ok ? "text-green-600" : "text-red-600"}>{f.ok ? "✓" : "✗"}</span>
-              <span className="font-mono text-xs">{f.name}</span>
-              {!f.ok && <span className="text-xs text-red-600">本机缺失，导出会告警</span>}
-            </li>
+            <div
+              key={f.name}
+              className={cx(
+                "flex items-center gap-2 rounded-control border px-2.5 py-2",
+                f.ok ? "border-line bg-card" : "border-[rgb(250_230_180)] bg-[rgb(255_250_235)]"
+              )}
+            >
+              <span
+                className={cx(
+                  "grid place-items-center w-4 h-4 rounded-full",
+                  f.ok ? "bg-[rgb(236_253_245)] text-[rgb(var(--ok))]" : "bg-[rgb(254_243_199)] text-[rgb(var(--warn))]"
+                )}
+              >
+                {f.ok ? <Check size={10} /> : <X size={10} />}
+              </span>
+              <span className="font-mono text-[11.5px] text-strong truncate">{f.name}</span>
+              <span
+                className="ml-auto text-[15px] leading-none text-body shrink-0"
+                style={{ fontFamily: `"${f.name}", sans-serif` }}
+                title="用该字体渲染的样张"
+              >
+                Aa 中
+              </span>
+            </div>
           ))}
-        </ul>
+        </div>
+
         {missing.length > 0 && (
-          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-            本机缺少 {missing.length} 个白名单字体。导出的 pptx 在别人的机器上可能因字体替换而溢出，
-            生成时会给出告警。建议改用已安装的字体，或安装缺失字体。
+          <div className="mt-3 rounded-control border border-[rgb(250_230_180)] bg-[rgb(255_250_235)] px-3 py-2.5 text-[12px] text-[rgb(var(--warn))]">
+            本机缺少 {missing.map((m) => m.name).join("、")}。导出的 pptx 在别人机器上可能因字体替换而溢出，
+            生成时会给出告警。建议改用已安装字体。
           </div>
         )}
-      </section>
+      </Card>
 
-      {/* 白名单说明 */}
-      <section className="rounded-xl border border-ink-100 bg-white p-5">
-        <h2 className="text-sm font-semibold">字体白名单</h2>
-        <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-ink-700 md:grid-cols-3">
-          <div>中文主选：{FONT_WHITELIST.yahei}</div>
-          <div>中文备选：{FONT_WHITELIST.dengxian}</div>
-          <div>跨平台：{FONT_WHITELIST.notoSC}（OFL）</div>
-          <div>兜底：{FONT_WHITELIST.simsun}</div>
-          <div>西文：{FONT_WHITELIST.latin}</div>
-          <div>等宽数字：{FONT_WHITELIST.mono}</div>
+      {/* 白名单 */}
+      <Card className="p-5">
+        <div className="flex items-center gap-2">
+          <Palette size={15} className="text-brand-strong" />
+          <span className="panel-title">字体白名单</span>
         </div>
-        <p className="mt-3 text-xs text-ink-300">
-          苹方（PingFang）仅 macOS 提供，不会被用作唯一选项。
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            ["中文主选", FONT_WHITELIST.yahei, "Windows 装机率接近 100%"],
+            ["中文备选", FONT_WHITELIST.dengxian, "Windows 自带"],
+            ["跨平台 / webfont", FONT_WHITELIST.notoSC, "OFL，= 思源黑体族"],
+            ["兜底", FONT_WHITELIST.simsun, "字形老，仅后备"],
+            ["西文", FONT_WHITELIST.latin, "通用"],
+            ["等宽数字", FONT_WHITELIST.mono, "KPI / 表格"],
+          ].map(([role, name, note]) => (
+            <div key={name} className="rounded-control border border-line bg-card px-2.5 py-2">
+              <SectionLabel>{role}</SectionLabel>
+              <div className="mt-1 font-mono text-[11.5px] text-strong">{name}</div>
+              <div className="mt-0.5 text-[10.5px] text-faint">{note}</div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-[11.5px] text-faint">
+          苹方（PingFang）仅 macOS 提供，不会被用作唯一选项 —— 否则 Windows 用户打开就是替换字体。
         </p>
-      </section>
+      </Card>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Field({ label, value, span }: { label: string; value: string; span?: boolean }) {
   return (
-    <div className="flex items-baseline gap-3">
-      <span className="w-20 shrink-0 text-xs text-ink-300">{label}</span>
-      <span className="font-mono text-xs text-ink-900">{value}</span>
+    <div className={cx("rounded-control border border-line bg-sunken/60 px-3 py-2", span && "sm:col-span-2")}>
+      <SectionLabel>{label}</SectionLabel>
+      <div className="mt-1 font-mono text-[12px] text-strong truncate">{value}</div>
     </div>
   );
 }

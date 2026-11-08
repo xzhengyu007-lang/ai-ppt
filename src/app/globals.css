@@ -2,9 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ------------------------------------------------------------------
+   设计 token（CSS 变量）—— 所有颜色/阴影/圆角只在这里定义一次。
+   参考 shadcn/ui 的做法：组件用语义类名（bg-card / text-muted / border-line），
+   换主题时只改变量，不必改组件。
+------------------------------------------------------------------- */
 :root {
-  --font-ui-zh: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  --font-ui-zh: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", system-ui, -apple-system,
+    sans-serif;
   --font-slide-zh: "Microsoft YaHei", "Noto Sans SC", sans-serif;
+
+  /* 表面层级：page < card < raised */
+  --surface-page: 250 251 253;
+  --surface-card: 255 255 255;
+  --surface-raised: 255 255 255;
+  --surface-sunken: 244 246 249;
+
+  --text-strong: 17 19 24;
+  --text-body: 51 56 66;
+  --text-muted: 108 116 130;
+  --text-faint: 152 160 172;
+
+  --line: 230 233 238;
+  --line-strong: 209 214 222;
+
+  /* 品牌色：靛蓝 → 紫，用于强调与渐变 */
+  --brand: 79 70 229;
+  --brand-strong: 67 56 202;
+  --brand-soft: 238 238 255;
+  --accent: 124 58 237;
+
+  --ok: 22 148 92;
+  --warn: 180 116 12;
+  --danger: 200 45 45;
+
+  --radius-control: 8px;
+  --radius-card: 14px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.06), 0 8px 24px -12px rgba(16, 24, 40, 0.12);
+  --shadow-lift: 0 2px 6px rgba(16, 24, 40, 0.08), 0 18px 40px -16px rgba(16, 24, 40, 0.22);
 }
 
 html,
@@ -14,14 +52,105 @@ body {
 
 body {
   font-family: var(--font-ui-zh);
-  background: #f6f7f9;
-  color: #111318;
+  background: rgb(var(--surface-page));
+  color: rgb(var(--text-strong));
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* 幻灯片画布里的文字要按 webfont/系统字体渲染，避免 UI 字体串味 */
+/* 幻灯片画布里的字体链要和导出侧一致 */
 .slide-surface {
   font-family: var(--font-slide-zh);
+}
+
+/* ---------- 组件层：少量可复用样式，避免每处都堆 className ---------- */
+@layer components {
+  .card {
+    @apply bg-card border border-line rounded-[var(--radius-card)];
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card-lift {
+    @apply card transition-all duration-200;
+  }
+  .card-lift:hover {
+    box-shadow: var(--shadow-card);
+    transform: translateY(-2px);
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 h-9 px-3.5 text-[13px] font-medium
+           rounded-[var(--radius-control)] transition-all duration-150 select-none
+           disabled:opacity-45 disabled:pointer-events-none whitespace-nowrap;
+  }
+  .btn-primary {
+    @apply btn text-white;
+    background: linear-gradient(135deg, rgb(var(--brand)) 0%, rgb(var(--accent)) 100%);
+    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.28);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 2px 10px rgba(79, 70, 229, 0.32);
+  }
+  .btn-secondary {
+    @apply btn bg-card border border-line text-body hover:border-line-strong hover:bg-[rgb(var(--surface-sunken))];
+  }
+  .btn-ghost {
+    @apply btn text-muted hover:bg-[rgb(var(--surface-sunken))] hover:text-strong;
+  }
+  .btn-danger-ghost {
+    @apply btn text-faint hover:text-[rgb(var(--danger))] hover:bg-[rgb(254,242,242)];
+  }
+
+  .field {
+    @apply w-full h-10 px-3 text-[13px] rounded-[var(--radius-control)] bg-card
+           border border-line text-strong placeholder:text-faint
+           outline-none transition-all duration-150
+           focus:border-[rgb(var(--brand))] focus:ring-4 focus:ring-[rgb(var(--brand-soft))];
+  }
+
+  .field-area {
+    @apply w-full px-3 py-2 text-[13px] rounded-[var(--radius-control)] bg-card
+           border border-line text-strong leading-relaxed
+           outline-none transition-all duration-150 resize-none
+           focus:border-[rgb(var(--brand))] focus:ring-4 focus:ring-[rgb(var(--brand-soft))];
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 h-7 px-2.5 text-[11px] font-medium
+           rounded-[var(--radius-pill)] border border-line bg-card text-muted;
+  }
+
+  .chip-brand {
+    @apply chip text-[rgb(var(--brand-strong))] border-[rgb(var(--brand-soft))]
+           bg-[rgb(var(--brand-soft))];
+  }
+
+  .section-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-faint;
+  }
+
+  .panel-title {
+    @apply text-[12px] font-semibold text-strong;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-md bg-[rgb(var(--surface-sunken))];
+  }
+}
+
+/* 顶部渐隐网格背景（首页 hero 用） */
+.hero-mesh {
+  background-image:
+    radial-gradient(60% 80% at 15% 0%, rgba(99, 91, 255, 0.28) 0%, transparent 60%),
+    radial-gradient(50% 70% at 85% 10%, rgba(168, 85, 247, 0.22) 0%, transparent 62%),
+    radial-gradient(40% 60% at 50% 100%, rgba(56, 189, 248, 0.16) 0%, transparent 70%);
+}
+
+.grid-lines {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 44px 44px;
 }
 
 ::-webkit-scrollbar {
@@ -29,9 +158,21 @@ body {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d3d7de;
-  border-radius: 6px;
+  background: rgb(var(--line-strong));
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #b9bfc9;
+  background: rgb(var(--text-faint));
+  background-clip: content-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 焦点可见性（键盘可达） */
+:focus-visible {
+  outline: 2px solid rgb(var(--brand));
+  outline-offset: 2px;
 }

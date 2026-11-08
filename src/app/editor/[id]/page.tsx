@@ -222,9 +222,9 @@ export default function EditorPage() {
   const recommendations = recommendLayouts(spec);
 
   return (
-    <div className="flex h-[calc(100vh-56px)] flex-col">
+    <div className="flex h-[calc(100vh-56px)] flex-col bg-page">
       {/* 工具条 */}
-      <div className="flex items-center gap-3 border-b border-ink-100 bg-white px-4 h-12 shrink-0">
+      <div className="flex items-center gap-3 border-b border-line bg-card/95 backdrop-blur px-4 h-14 shrink-0">
         <input
           value={deck.meta.title}
           onChange={(e) => {
@@ -279,14 +279,14 @@ export default function EditorPage() {
       </div>
 
       {exportMsg && (
-        <div className="border-b border-ink-100 bg-amber-50 px-4 py-1.5 text-xs text-amber-800">
+        <div className="border-b border-line bg-[rgb(255_250_235)] px-4 py-2 text-[11.5px] text-[rgb(var(--warn))]">
           {exportMsg}
         </div>
       )}
 
       <div className="flex flex-1 overflow-hidden">
         {/* 左：页序 */}
-        <aside className="w-[190px] shrink-0 overflow-auto border-r border-ink-100 bg-white p-3">
+        <aside className="w-[204px] shrink-0 overflow-auto border-r border-line bg-card p-3">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-medium text-ink-500">页面 {deck.slides.length}</span>
             <button
@@ -309,11 +309,11 @@ export default function EditorPage() {
                 }
               }}
               onClick={() => selectSlide(i)}
-              className={`mb-2 cursor-pointer rounded border ${
-                current === i ? "border-ink-900 ring-1 ring-ink-900" : "border-ink-100"
+              className={`group mb-1.5 cursor-pointer rounded-control border overflow-hidden transition-all duration-150 ${
+                current === i ? "border-brand ring-2 ring-[rgb(var(--brand-soft))] shadow-sm" : "border-ink-100"
               }`}
             >
-              <div className="pointer-events-none bg-ink-100">
+              <div className="pointer-events-none bg-sunken">
                 <SlideFrame slide={r} scale={0.125} />
               </div>
               <div className="flex items-center justify-between px-1.5 py-1">
@@ -337,7 +337,7 @@ export default function EditorPage() {
         {/* 中：画布 */}
         <div
           ref={centerRef}
-          className={`flex flex-1 items-start justify-center overflow-auto p-6 ${
+          className={`relative flex flex-1 items-start justify-center overflow-auto p-8 ${
             fullscreen ? "bg-ink-900" : "bg-[#eef0f4]"
           }`}
         >
@@ -347,12 +347,12 @@ export default function EditorPage() {
         </div>
 
         {/* 右：属性 */}
-        <aside className="w-[340px] shrink-0 overflow-auto border-l border-ink-100 bg-white">
+        <aside className="w-[348px] shrink-0 overflow-auto border-l border-line bg-card">
           <Section title="版式">
             <select
               value={slide.layout}
               onChange={(e) => setLayout(current, e.target.value as LayoutId)}
-              className="w-full rounded border border-ink-100 px-2 py-1.5 text-sm"
+              className="field h-9"
             >
               {LAYOUT_IDS.map((l) => (
                 <option key={l} value={l}>
@@ -377,7 +377,7 @@ export default function EditorPage() {
             <select
               value={deck.meta.themeId}
               onChange={(e) => setTheme(e.target.value)}
-              className="w-full rounded border border-ink-100 px-2 py-1.5 text-sm"
+              className="field h-9"
             >
               {THEMES.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -404,7 +404,7 @@ export default function EditorPage() {
                         value={content.text}
                         onChange={(e) => setSlotText(current, slot.id, e.target.value)}
                         rows={2}
-                        className="mt-0.5 w-full rounded border border-ink-100 px-2 py-1 text-sm"
+                        className="mt-0.5 field-area"
                       />
                     </label>
                   );
@@ -422,7 +422,7 @@ export default function EditorPage() {
                           useEditor.setState({ deck: d, dirty: true });
                         }}
                         rows={4}
-                        className="mt-0.5 w-full rounded border border-ink-100 px-2 py-1 text-sm"
+                        className="mt-0.5 field-area"
                       />
                     </label>
                   );
@@ -440,7 +440,7 @@ export default function EditorPage() {
               value={slide.notes}
               onChange={(e) => setNotes(current, e.target.value)}
               rows={6}
-              className="w-full rounded border border-ink-100 px-2 py-1 text-sm"
+              className="field-area"
             />
             {[...slide.notes].length < 80 && (
               <div className="mt-1 text-[11px] text-amber-700">
@@ -482,8 +482,8 @@ function slide_layout_name(l: string) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border-b border-ink-100 px-4 py-3">
-      <div className="mb-2 text-xs font-semibold text-ink-700">{title}</div>
+    <div className="border-b border-line px-4 py-3.5">
+      <div className="mb-2 section-label">{title}</div>
       {children}
     </div>
   );
