@@ -56,7 +56,7 @@ export default function SettingsPage() {
   const missing = fonts.filter((f) => !f.ok);
 
   return (
-    <div className="mx-auto max-w-[1000px] px-6 py-10 space-y-5">
+    <div className="mx-auto w-full max-w-[1000px] space-y-5 px-4 py-10 sm:px-6 lg:px-8">
       <div>
         <h1 className="text-[24px] font-semibold tracking-tight">设置</h1>
         <p className="mt-1.5 text-[13px] text-muted">

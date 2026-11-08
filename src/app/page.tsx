@@ -156,7 +156,7 @@ export default function HomePage() {
       <section className="relative overflow-hidden bg-[#0b0b14] text-white">
         <div className="absolute inset-0 hero-mesh" />
         <div className="absolute inset-0 grid-lines opacity-60" />
-        <div className="relative mx-auto max-w-[1240px] px-6 pt-14 pb-28">
+        <div className="relative shell pt-14 pb-28">
           <div className="flex items-center gap-2 text-[11px]">
             <span className="chip border-white/15 bg-white/10 text-white/80">
               <Sparkles size={11} /> Slide IR 单一事实源
@@ -174,15 +174,15 @@ export default function HomePage() {
             )}
           </div>
 
-          <h1 className="mt-6 text-[40px] leading-[1.15] font-semibold tracking-tight max-w-[720px]">
+          <h1 className="mt-6 h-display max-w-[720px]">
             说一句主题，
             <br />
             <span className="bg-gradient-to-r from-indigo-300 via-violet-300 to-sky-200 bg-clip-text text-transparent">
               拿到一套能改的 PPT
             </span>
           </h1>
-          <p className="mt-4 max-w-[620px] text-[13.5px] leading-relaxed text-white/65">
-            先出大纲给你改，确认后再逐页生成；十二套主题、八个版式由代码生成，
+          <p className="mt-4 max-w-[62ch] text-[13.5px] leading-relaxed text-white/65 text-pretty">
+            先出大纲给你改，确认后再逐页生成；二十四套模板、八个版式由代码生成，
             预览与导出读同一份 IR —— 导出的每一行字都能选中改写，不是截图。
           </p>
 
@@ -201,7 +201,7 @@ export default function HomePage() {
       </section>
 
       {/* ───────── 生成器（压在 hero 上） ───────── */}
-      <div className="mx-auto max-w-[1240px] px-6 -mt-16 relative">
+      <div className="shell -mt-16 relative">
         <Card className="p-5 shadow-card animate-fade-up">
           <div className="flex items-center justify-between">
             <SectionLabel>描述你要什么</SectionLabel>
@@ -338,7 +338,7 @@ export default function HomePage() {
 
       {/* ───────── 大纲确认 ───────── */}
       {outline.length > 0 && (
-        <div className="mx-auto max-w-[1240px] px-6 mt-6">
+        <div className="shell mt-6">
           <Card className="overflow-hidden animate-fade-up">
             <div className="flex items-center gap-3 px-5 py-3.5 border-b border-line">
               <span className="w-5 h-5 rounded-full bg-brand-soft text-brand-strong text-[11px] font-semibold grid place-items-center">
@@ -403,7 +403,7 @@ export default function HomePage() {
 
       {/* ───────── 生成进度 ───────── */}
       {progress.length > 0 && (
-        <div className="mx-auto max-w-[1240px] px-6 mt-6">
+        <div className="shell mt-6">
           <div className="rounded-card overflow-hidden border border-[#1b1b26] bg-[#0e0e17]">
             <div className="flex items-center gap-2 px-4 py-2 border-b border-white/10">
               <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
@@ -430,13 +430,43 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* ───────── 数据条：大数字 + 小标签 + 1px 竖线 ───────── */}
+      <section className="shell section">
+        <div className="grid items-center gap-8 lg:grid-cols-12 lg:gap-12">
+          <div className="lg:col-span-4 lg:pr-6">
+            <div className="text-[44px] font-bold leading-none tracking-tight text-[rgb(var(--brand-strong))]">
+              24
+            </div>
+            <p className="mt-2.5 lead">套模板：12 套原创 + 12 套导入 presenton 的配色与字体性格</p>
+          </div>
+          {/* 竖线用伪元素，而不是边框：高度可定点、不撑开布局 */}
+          <div className="relative lg:col-span-8 lg:before:absolute lg:before:-left-6 lg:before:top-1/2 lg:before:h-16 lg:before:w-px lg:before:-translate-y-1/2 lg:before:bg-line">
+            <div className="grid grid-cols-2 gap-6 sm:grid-cols-4 sm:gap-8">
+              {[
+                { n: "8", label: "个版式" },
+                { n: "5", label: "种构图语言" },
+                { n: "18", label: "项导出校验" },
+                { n: "1", label: "个运行时依赖" },
+              ].map((s) => (
+                <div key={s.label}>
+                  <div className="text-[26px] font-semibold leading-none tracking-tight text-strong">
+                    {s.n}
+                  </div>
+                  <div className="mt-1.5 text-[11.5px] text-faint">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ───────── 模板墙 ───────── */}
-      <section className="mx-auto max-w-[1240px] px-6 mt-14">
+      <section className="shell section mt-2">
         <div className="flex items-end gap-3">
           <div>
-            <h2 className="text-[19px] font-semibold tracking-tight">十二套模板</h2>
-            <p className="mt-1 text-[12.5px] text-muted">
-              缩略图是真实渲染；换主题只改 token，版式几何不变、不破版
+            <h2 className="h-section">二十四套模板</h2>
+            <p className="mt-1 lead">
+              缩略图是真实渲染；5 种构图 + 12 套配色，换模板不只是换颜色
             </p>
           </div>
           <Link
@@ -475,6 +505,10 @@ export default function HomePage() {
                       <Check size={12} />
                     </span>
                   )}
+                  {/* hover 才露出的"选用"提示：不占版面，但给足可点性 */}
+                  <span className="absolute bottom-2 right-2 rounded-pill bg-brand px-2 py-0.5 text-[10px] font-medium text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                    选用
+                  </span>
                 </div>
                 <div className="px-3 py-2.5 bg-card">
                   <div className="flex items-center gap-1.5">
@@ -499,9 +533,9 @@ export default function HomePage() {
       </section>
 
       {/* ───────── 最近作品 ───────── */}
-      <section className="mx-auto max-w-[1240px] px-6 mt-14">
+      <section className="shell section mt-2">
         <div className="flex items-end gap-3">
-          <h2 className="text-[19px] font-semibold tracking-tight">最近作品</h2>
+          <h2 className="h-section">最近作品</h2>
           {recent.length > 0 && (
             <span className="chip ml-1">{recent.length} 份草稿</span>
           )}
@@ -555,7 +589,7 @@ export default function HomePage() {
         )}
       </section>
 
-      <footer className="mx-auto max-w-[1240px] px-6 mt-16">
+      <footer className="shell mt-12">
         <div className="flex flex-wrap items-center gap-3 rounded-card border border-line bg-card px-4 py-3">
           <StatusPill tone="brand">导出优先</StatusPill>
           <span className="text-[12px] text-muted">

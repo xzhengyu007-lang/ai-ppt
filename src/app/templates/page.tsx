@@ -28,11 +28,11 @@ export default function TemplatesPage() {
   const slides = byTheme.get(active) ?? [];
 
   return (
-    <div className="mx-auto max-w-[1240px] px-6 py-10">
+    <div className="shell py-10">
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <h1 className="text-[24px] font-semibold tracking-tight">模板</h1>
-          <p className="mt-1.5 text-[13px] text-muted max-w-[640px]">
+          <h1 className="text-[24px] font-semibold tracking-tight text-balance">模板</h1>
+          <p className="mt-1.5 lead">
             十二套主题 × 八个版式，全部原创、由代码生成。版式几何是数据、主题只是 token ——
             所以换配色不会破版。
           </p>

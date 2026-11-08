@@ -65,6 +65,31 @@ body {
 
 /* ---------- 组件层：少量可复用样式，避免每处都堆 className ---------- */
 @layer components {
+  /**
+   * 容器与节奏 —— 参考 mearashadowfax/ScrewFast（MIT）的做法：
+   *   max-w-[85rem] px-4 sm:px-6 lg:px-8 / py-10 lg:py-14
+   * 统一成两个类，页面里不再各写一套 max-w + px。
+   */
+  .shell {
+    @apply mx-auto w-full max-w-[1240px] px-4 sm:px-6 lg:px-8;
+  }
+  .section {
+    @apply py-10 lg:py-14;
+  }
+
+  /* 标题梯级：tracking-tight + text-balance（换行更均衡，不出现孤字） */
+  .h-display {
+    @apply text-[30px] font-semibold leading-[1.15] tracking-tight text-balance
+           sm:text-[34px] lg:text-[40px];
+  }
+  .h-section {
+    @apply text-[20px] font-semibold tracking-tight text-balance sm:text-[22px];
+  }
+  /* 正文限宽：超过 ~62 字符中文阅读会累 */
+  .lead {
+    @apply max-w-[62ch] text-[13.5px] leading-relaxed text-muted text-pretty;
+  }
+
   .card {
     @apply bg-card border border-line rounded-[var(--radius-card)];
     box-shadow: var(--shadow-sm);
@@ -80,8 +105,9 @@ body {
 
   .btn {
     @apply inline-flex items-center justify-center gap-1.5 h-9 px-3.5 text-[13px] font-medium
-           rounded-[var(--radius-control)] transition-all duration-150 select-none
-           disabled:opacity-45 disabled:pointer-events-none whitespace-nowrap;
+           rounded-[var(--radius-control)] transition-all duration-200 select-none
+           disabled:opacity-45 disabled:pointer-events-none whitespace-nowrap
+           active:translate-y-px;
   }
   .btn-primary {
     @apply btn text-white;
