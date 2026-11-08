@@ -1,0 +1,30 @@
+# ä¾èµ–ä¸äº§ç‰©
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+
+# æœ¬åœ°æ•°æ®ä¸å¯†é’¥ï¼ˆç»ä¸å…¥åº“ï¼‰
+.env
+.env.local
+.env*.local
+data/*.db
+data/*.db-journal
+*.sqlite
+*.sqlite3
+
+# è°ƒç ”æœŸä¸€æ¬¡æ€§äº§ç‰©
+.research/npm-cache/
+.research/pylib/
+.research/tmp/
+.research/spike/node_modules/
+.research/*.out
+
+# ç³»ç»Ÿä¸ç¼–è¾‘å™¨
+.DS_Store
+Thumbs.db
+*.log
+
+# µ÷ÑĞÆÚ¹¤×÷Çø£¨Ö¤¾İÒÑÄÚÁª½ø docs£©
+.research/
