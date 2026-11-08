@@ -4,6 +4,7 @@ import { LAYOUTS } from "@/lib/layout/definitions";
 import { resolveDeck, resolveSlide, assertNoHorizontalOverflow } from "@/lib/layout/resolve";
 import { buildLayoutCoverageDeck, buildMockDeck } from "@/lib/fixtures/mock-deck";
 import { THEMES } from "@/lib/theme/themes";
+import { composeLayout, COMPOSITION_LABELS, type CompositionId } from "@/lib/layout/compositions";
 import { deckSchema } from "@/lib/ir/schema";
 
 describe("版式定义自洽性", () => {
@@ -153,5 +154,49 @@ describe("内容契约：超字数要打标记，不静默", () => {
     };
     const rs = resolveSlide(deck, broken);
     expect(rs.warnings.some((w) => w.includes("图表数据不一致"))).toBe(true);
+  });
+});
+
+describe("构图语言：模板不再只是换颜色", () => {
+  it("每套模板都声明了构图，且至少覆盖 3 种构图（否则又变回一个模板换色）", () => {
+    const set = new Set<CompositionId>();
+    for (const t of THEMES) {
+      expect(t.composition, `${t.id} 缺 composition`).toBeTruthy();
+      expect(COMPOSITION_LABELS[t.composition]).toBeTruthy();
+      set.add(t.composition);
+    }
+    expect(set.size).toBeGreaterThanOrEqual(3);
+  });
+
+  it("12 套模板 × 8 版式在各自构图下仍然不出界、且有可见文字", () => {
+    let n = 0;
+    for (const t of THEMES) {
+      for (const id of LAYOUT_IDS) {
+        const composed = composeLayout(LAYOUTS[id], t.composition, t.tokens);
+        for (const s of composed.slots) {
+          expect(s.box.x, `${t.id}/${id}/${s.id} x<0`).toBeGreaterThanOrEqual(0);
+          expect(s.box.y, `${t.id}/${id}/${s.id} y<0`).toBeGreaterThanOrEqual(0);
+          expect(s.box.x + s.box.w, `${t.id}/${id}/${s.id} 右出界`).toBeLessThanOrEqual(CANVAS_WIDTH + 0.5);
+          expect(s.box.y + s.box.h, `${t.id}/${id}/${s.id} 下出界`).toBeLessThanOrEqual(CANVAS_HEIGHT + 0.5);
+          expect(s.box.w, `${t.id}/${id}/${s.id} 宽度非正`).toBeGreaterThan(0);
+        }
+        for (const d of composed.decor ?? []) {
+          expect(d.box.x + d.box.w).toBeLessThanOrEqual(CANVAS_WIDTH + 0.5);
+          expect(d.box.y + d.box.h).toBeLessThanOrEqual(CANVAS_HEIGHT + 0.5);
+        }
+        n++;
+      }
+    }
+    expect(n).toBe(96);
+  });
+
+  it("不同构图确实产生不同几何（防止构图函数空转）", () => {
+    const base = LAYOUTS.cover;
+    const a = composeLayout(base, "band", THEMES[0].tokens);
+    const b = composeLayout(base, "rail", THEMES[0].tokens);
+    const ta = a.slots.find((s) => s.id === "title")!;
+    const tb = b.slots.find((s) => s.id === "title")!;
+    expect(ta.box.y !== tb.box.y || ta.box.x !== tb.box.x).toBe(true);
+    expect((a.decor ?? []).length).toBeGreaterThan((base.decor ?? []).length);
   });
 });

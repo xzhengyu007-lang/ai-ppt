@@ -15,6 +15,8 @@ import {
 import type { Deck, SlotContent, Slide, ThemeTokens } from "@/lib/ir/schema";
 import { fitText, type FitLevel } from "@/lib/text/fit";
 import { getLayout, type Box, type ColorKey, type SlotDef } from "./definitions";
+import { composeLayout, type CompositionId } from "./compositions";
+import { getTheme } from "@/lib/theme/themes";
 
 export interface ResolvedTextBlock {
   lines: string[];
@@ -107,7 +109,10 @@ function textBlock(
     lineHeightPx: r.lineHeightPx,
     letterSpacing,
     color: colorOf(theme, slot.colorKey ?? "text1"),
-    fontFace: theme.fonts.zh,
+    fontFace:
+      slot.role === "title" || slot.role === "eyebrow"
+        ? (theme.fonts.display ?? theme.fonts.zh)
+        : theme.fonts.zh,
     bold: slot.bold ?? false,
     align: alignOf(slot),
     valign: valignOf(slot),
@@ -153,7 +158,14 @@ export function bulletItemBoxes(
 /** 把一页 IR 解析成最终元素列表 */
 export function resolveSlide(deck: Deck, slide: Slide): ResolvedSlide {
   const theme = deck.theme;
-  const layout = getLayout(slide.layout);
+  // 构图语言来自模板注册表（deck 只存 tokens，构图属于模板定义）
+  let composition: CompositionId = "standard";
+  try {
+    composition = getTheme(deck.meta.themeId).composition;
+  } catch {
+    composition = "standard";
+  }
+  const layout = composeLayout(getLayout(slide.layout), composition, theme);
   const elements: ResolvedElement[] = [];
   const warnings: string[] = [...slide.warnings];
 

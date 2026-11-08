@@ -9,6 +9,7 @@
  */
 import type { ThemeTokens } from "@/lib/ir/schema";
 import { FONT_WHITELIST } from "@/lib/ir/constants";
+import type { CompositionId } from "@/lib/layout/compositions";
 
 export interface ThemeDef {
   id: string;
@@ -17,12 +18,14 @@ export interface ThemeDef {
   description: string;
   /** 明/暗，仅用于 UI 选择器分组 */
   tone: "light" | "dark";
+  /** 构图语言：决定版式几何与装饰，避免 12 套模板长得一样 */
+  composition: CompositionId;
   tokens: ThemeTokens;
 }
 
 const F = FONT_WHITELIST;
 
-export const THEMES: ThemeDef[] = [
+const RAW_THEMES: Omit<ThemeDef, "composition">[] = [
   {
     id: "business-navy",
     name: "商务深蓝",
@@ -336,6 +339,42 @@ export const THEMES: ThemeDef[] = [
     },
   },
 ];
+
+/**
+ * 每套模板的构图语言与展示字体。
+ *
+ * 之前 12 套模板只有配色差异 → 看起来像同一个模板换色。
+ * 这里给每套指定 composition（几何/装饰）与 display 字体（大标题用宋体 = 编辑感）。
+ */
+const TEMPLATE_META: Record<
+  string,
+  { composition: CompositionId; display?: string }
+> = {
+  "business-navy": { composition: "band" },
+  "minimal-mono": { composition: "editorial", display: F.simsun },
+  "tech-dark": { composition: "card" },
+  academic: { composition: "editorial", display: F.simsun },
+  "fresh-green": { composition: "card" },
+  "gov-red": { composition: "band" },
+  "product-launch": { composition: "rail" },
+  "edu-warm": { composition: "card" },
+  "finance-slate": { composition: "rail" },
+  "editorial-warm": { composition: "editorial", display: F.simsun },
+  "modern-violet": { composition: "card" },
+  "corporate-teal": { composition: "rail" },
+};
+
+export const THEMES: ThemeDef[] = RAW_THEMES.map((t) => {
+  const meta = TEMPLATE_META[t.id] ?? { composition: "standard" as CompositionId };
+  return {
+    ...t,
+    composition: meta.composition,
+    tokens: {
+      ...t.tokens,
+      fonts: { ...t.tokens.fonts, display: meta.display },
+    },
+  };
+});
 
 export const THEME_IDS = THEMES.map((t) => t.id);
 

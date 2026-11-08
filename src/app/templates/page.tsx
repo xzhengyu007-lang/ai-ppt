@@ -9,6 +9,7 @@ import { resolveDeck } from "@/lib/layout/resolve";
 import { THEMES } from "@/lib/theme/themes";
 import { LAYOUT_IDS } from "@/lib/ir/constants";
 import { LAYOUTS } from "@/lib/layout/definitions";
+import { COMPOSITION_LABELS } from "@/lib/layout/compositions";
 
 export default function TemplatesPage() {
   const [active, setActive] = useState(THEMES[0].id);
@@ -67,7 +68,12 @@ export default function TemplatesPage() {
                 />
                 {on && <Check size={13} className="ml-auto text-brand-strong" />}
               </div>
-              <div className="mt-1.5 text-[12.5px] font-medium text-strong">{t.name}</div>
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <span className="text-[12.5px] font-medium text-strong">{t.name}</span>
+                <span className="ml-auto text-[9.5px] px-1.5 py-0.5 rounded-pill bg-sunken text-muted">
+                  {COMPOSITION_LABELS[t.composition]}
+                </span>
+              </div>
               <div className="mt-0.5 text-[10.5px] text-faint line-clamp-1">{t.description}</div>
             </button>
           );

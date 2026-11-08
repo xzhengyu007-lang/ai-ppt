@@ -39,6 +39,8 @@ export const themeTokensSchema = z.object({
     zh: fontName,
     en: fontName,
     mono: fontName,
+    /** 展示字体（大标题/章节号用）。缺省则回落到 zh。用宋体做标题是"编辑感"的关键 */
+    display: fontName.optional(),
   }),
   rhythm: z.object({
     /** 基础节奏单位（px），版式内间距一律取它的整数倍 */
