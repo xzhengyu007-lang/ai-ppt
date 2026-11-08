@@ -6,6 +6,34 @@
 
 ---
 
+## 部署与分享
+
+仓库：<https://github.com/xzhengyu007-lang/ai-ppt>（私有；要公开请自行改可见性）
+
+### 方式一 · Vercel（推荐，永久地址）
+
+1. Vercel → New Project → 导入该仓库；
+2. 框架自动识别 Next.js，**不需要任何环境变量**（默认就是 mock 模式，功能完整）；
+3. 若要接真实模型，在 Vercel 环境变量里填 `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL`。
+
+⚠️ **Vercel 上必须把 `DATABASE_PATH` 设成 `/tmp/app.db`**：serverless 只有 `/tmp` 可写，且**实例重启后草稿会丢**。
+需要持久化就换 Postgres/Turso 等托管库（改 `src/lib/storage/decks.ts` 一层即可）。导出 pptx 不受影响——它在浏览器端生成。
+
+### 方式二 · 本地跑 + 临时公网地址（适合演示）
+
+```bash
+pnpm build && pnpm start          # 生产模式，localhost:3000
+
+# 另一个终端：免账号的公网隧道（地址是临时的，进程关掉即失效）
+cloudflared tunnel --url http://localhost:3000
+# 输出形如 https://xxx-yyy-zzz.trycloudflare.com
+```
+
+⚠️ **安全提醒**：本应用**没有鉴权**。公网暴露期间任何人可创建草稿、消耗你的模型额度。
+演示用完请立刻停掉隧道；长期对外请先加访问控制。
+
+---
+
 ## 快速开始
 
 ```bash
