@@ -17,3 +17,6 @@ https://github.com/hugohe3/ppt-master,MIT,2026-11-09,只读参考其确认闸门
 https://github.com/pipipi-pikachu/PPTist,AGPL-3.0,2026-11-09,只读参考编辑器交互模型（缩放/吸附/快照撤销）；AGPL 故一行代码都未拷贝,否（禁拷代码，仅设计参考）
 https://github.com/tldraw/tldraw,自定义商业许可（禁生产环境+水印+回传）,2026-11-09,仅评估后否决，未引入、未拷贝,否
 https://github.com/chuspeeism/dashi-ppt-skill,AGPL-3.0,2026-11-09,只读参考其字数预算中英分档；未拷贝代码,否（禁拷代码，仅设计参考）
+https://commons.wikimedia.org,CC0 / 公有领域 / CC BY / CC BY-SA（按图片逐个判定）,2026-11-09,图库接入：检索时只放行可商用许可（CC0/PD/CC BY/CC BY-SA），非商用/ND 一律丢弃；署名自动写入页面图注,是
+https://github.com/presenton/presenton,Apache-2.0,2026-11-09,导入其模板的配色与字体性格（theme.colors / 字体风格），生成 12 套新主题；未导入其元素树与图片。需保留 NOTICE 署名,是（需保留署名）
+(自制) abstract-panels,自有代码,2026-11-09,离线兜底用的抽象几何占位面板（无外部素材）,是

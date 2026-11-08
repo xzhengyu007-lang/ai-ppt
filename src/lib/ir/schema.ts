@@ -109,6 +109,11 @@ export const imageContentSchema = z.object({
   /** null 表示纯图形占位（默认不接图库，红线：不抓商业素材） */
   src: z.string().nullable(),
   alt: z.string().optional(),
+  /** 署名（外部图库素材必填，渲染在图片右下角） */
+  credit: z.string().optional(),
+  /** 原始文件页，便于追溯与合规审计 */
+  sourceUrl: z.string().optional(),
+  license: z.string().optional(),
 });
 
 export const quoteContentSchema = z.object({

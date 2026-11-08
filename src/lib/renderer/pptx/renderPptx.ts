@@ -75,7 +75,59 @@ function addTextBlock(
   );
 }
 
-export function renderSlide(pptx: any, rs: ResolvedSlide, chartTypeOf: (t: string) => any) {
+/**
+ * 把远程图片转成 base64 data URI。
+ *
+ * 为什么必须做：pptxgenjs 在浏览器里不能用 `path`（那是 Node 读文件用），
+ * 远程 URL 也不会被自动内联；不转 base64 的话导出的 pptx 里图片是空的。
+ */
+async function toDataUri(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let bin = "";
+    const CHUNK = 0x8000;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+    }
+    const base64 =
+      typeof btoa === "function"
+        ? btoa(bin)
+        : // Node 环境（脚本生成示例、CI）走 Buffer
+          Buffer.from(bytes).toString("base64");
+    const mime = res.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+    return `data:${mime};base64,${base64}`;
+  } catch {
+    return null;
+  }
+}
+
+/** 预先抓取所有远程图片，返回 url → dataURI 的映射 */
+async function prefetchRemoteImages(slides: ResolvedSlide[]): Promise<Map<string, string>> {
+  const urls = new Set<string>();
+  for (const s of slides) {
+    for (const el of s.elements) {
+      if (el.kind === "image" && el.src && /^https?:\/\//.test(el.src)) urls.add(el.src);
+    }
+  }
+  const map = new Map<string, string>();
+  await Promise.all(
+    [...urls].map(async (u) => {
+      const uri = await toDataUri(u);
+      if (uri) map.set(u, uri);
+    })
+  );
+  return map;
+}
+
+export function renderSlide(
+  pptx: any,
+  rs: ResolvedSlide,
+  chartTypeOf: (t: string) => any,
+  imageMap?: Map<string, string>
+) {
   const slide: any = pptx.addSlide();
   slide.background = { color: hex(rs.background) };
 
@@ -147,13 +199,28 @@ export function renderSlide(pptx: any, rs: ResolvedSlide, chartTypeOf: (t: strin
       case "image": {
         // 本期不接图库（素材红线）：无图时画一个带边框的占位块，保持版面结构
         if (el.src) {
-          slide.addImage({
-            path: el.src,
-            x: pxToInch(el.box.x),
-            y: pxToInch(el.box.y),
-            w: pxToInch(el.box.w),
-            h: pxToInch(el.box.h),
-          });
+          const remote = imageMap?.get(el.src);
+          const data = el.src.startsWith("data:") ? el.src : remote;
+          if (data) {
+            slide.addImage({
+              data,
+              x: pxToInch(el.box.x),
+              y: pxToInch(el.box.y),
+              w: pxToInch(el.box.w),
+              h: pxToInch(el.box.h),
+              sizing: { type: "cover", w: pxToInch(el.box.w), h: pxToInch(el.box.h) },
+            });
+          } else {
+            // 远程图抓取失败：画占位而不是崩掉，并在备注里留痕
+            slide.addShape(pptx.ShapeType.rect, {
+              x: pxToInch(el.box.x),
+              y: pxToInch(el.box.y),
+              w: pxToInch(el.box.w),
+              h: pxToInch(el.box.h),
+              fill: { color: "F0F2F5" },
+              line: { color: "C9CFD8", width: 1, dashType: "dash" },
+            });
+          }
         } else {
           slide.addShape(pptx.ShapeType.rect, {
             x: pxToInch(el.box.x),
@@ -199,7 +266,9 @@ export async function renderDeckToBuffer(
   const pptx = createPresentation();
   pptx.title = meta.title;
   const ct = chartTypeMapper(pptx);
-  for (const rs of slides) renderSlide(pptx, rs, ct);
+  // 远程配图先转 base64，否则导出的 pptx 里图片是空的
+  const imageMap = await prefetchRemoteImages(slides);
+  for (const rs of slides) renderSlide(pptx, rs, ct, imageMap);
   const out = (await pptx.write({ outputType: "arraybuffer" })) as ArrayBuffer;
   return out;
 }

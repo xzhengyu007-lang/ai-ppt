@@ -10,6 +10,7 @@
 import type { ThemeTokens } from "@/lib/ir/schema";
 import { FONT_WHITELIST } from "@/lib/ir/constants";
 import type { CompositionId } from "@/lib/layout/compositions";
+import { IMPORTED_THEMES } from "./imported";
 
 export interface ThemeDef {
   id: string;
@@ -364,17 +365,36 @@ const TEMPLATE_META: Record<
   "corporate-teal": { composition: "rail" },
 };
 
-export const THEMES: ThemeDef[] = RAW_THEMES.map((t) => {
-  const meta = TEMPLATE_META[t.id] ?? { composition: "standard" as CompositionId };
-  return {
-    ...t,
-    composition: meta.composition,
+export const THEMES: ThemeDef[] = [
+  ...RAW_THEMES.map((t) => {
+    const meta = TEMPLATE_META[t.id] ?? { composition: "standard" as CompositionId };
+    return {
+      ...t,
+      composition: meta.composition,
+      tokens: {
+        ...t.tokens,
+        fonts: { ...t.tokens.fonts, display: meta.display },
+      },
+    };
+  }),
+  // ---- 从 presenton（Apache-2.0）导入的配色与字体性格 ----
+  ...IMPORTED_THEMES.map((t) => ({
+    id: t.id,
+    name: t.name,
+    description: t.description,
+    tone: t.tone,
+    composition: t.composition,
     tokens: {
       ...t.tokens,
-      fonts: { ...t.tokens.fonts, display: meta.display },
+      fonts: {
+        zh: t.tokens.fonts.zh,
+        en: t.tokens.fonts.en,
+        mono: t.tokens.fonts.mono,
+        display: t.tokens.fonts.display,
+      },
     },
-  };
-});
+  })) as ThemeDef[],
+];
 
 export const THEME_IDS = THEMES.map((t) => t.id);
 

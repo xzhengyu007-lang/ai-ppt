@@ -122,7 +122,15 @@ pnpm dev
 
 ---
 
-## 页面
+## 模板与配图
+
+- **24 套模板**：12 套原创 + 12 套从 [presenton](https://github.com/presenton/presenton)（Apache-2.0）**导入配色与字体性格**（未导入其元素树）。
+- **5 种构图语言**：`standard / editorial / card / band / rail`，决定版式几何与装饰 —— 换模板不只是换颜色。
+- **展示字体**：编辑类模板的大标题用 **宋体**（中文里拉开档次最快的一招，且 Windows 必装）。
+- **配图接图库**：编辑器「配图」面板可搜索 **Wikimedia Commons**，只放行 CC0 / 公有领域 / CC BY / CC BY-SA，
+  **非商用/ND 一律丢弃**；套用后署名自动写进页面图注，并登记到 `docs/03-素材来源.csv`。
+  无需 API Key（Commons 的 API 开放 CORS），所以静态站也能用。
+
 
 | 路由 | 内容 |
 |---|---|

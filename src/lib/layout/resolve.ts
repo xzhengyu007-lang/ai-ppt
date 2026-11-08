@@ -168,6 +168,8 @@ export function resolveSlide(deck: Deck, slide: Slide): ResolvedSlide {
   const layout = composeLayout(getLayout(slide.layout), composition, theme);
   const elements: ResolvedElement[] = [];
   const warnings: string[] = [...slide.warnings];
+  /** 图库素材的署名，最后并进 caption */
+  let pendingCredit: string | undefined;
 
   // 装饰元素先画，保证在文字下层
   for (const [i, d] of (layout.decor ?? []).entries()) {
@@ -369,6 +371,10 @@ export function resolveSlide(deck: Deck, slide: Slide): ResolvedSlide {
         if (!content.src) {
           warnings.push(`槽位 ${slot.id} 未配图（使用纯图形占位）`);
         }
+        // 图库素材的署名统一并进 caption（图片下方那行小字），压在图上会看不清
+        if (content.credit) {
+          pendingCredit = content.credit;
+        }
         break;
       }
 
@@ -383,6 +389,29 @@ export function resolveSlide(deck: Deck, slide: Slide): ResolvedSlide {
         });
         break;
       }
+    }
+  }
+
+  // 图库素材署名：并进 caption（没有 caption 就补一个）
+  if (pendingCredit) {
+    const captionSlot = layout.slots.find((s) => s.id === "caption");
+    const existing = elements.find(
+      (e) => e.id === "caption" && e.kind === "text"
+    ) as Extract<ResolvedElement, { kind: "text" }> | undefined;
+
+    const baseText = existing ? existing.block.lines.join("") : "";
+    const merged = baseText ? `${baseText} · ${pendingCredit}` : pendingCredit;
+
+    if (existing) {
+      existing.block = textBlock(theme, captionSlot!, merged, captionSlot?.maxLines ?? 2);
+    } else if (captionSlot) {
+      elements.push({
+        kind: "text",
+        id: "caption",
+        role: "caption",
+        box: padBox(captionSlot),
+        block: textBlock(theme, captionSlot, merged, captionSlot.maxLines ?? 2),
+      });
     }
   }
 

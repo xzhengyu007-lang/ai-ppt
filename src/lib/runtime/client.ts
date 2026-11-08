@@ -306,4 +306,40 @@ export function editorHref(id: string): string {
   return `/editor?id=${encodeURIComponent(id)}`;
 }
 
+/* ------------------------------------------------------------------ 图库 */
+
+export interface ImageHit {
+  id: string;
+  url: string;
+  width: number;
+  height: number;
+  author: string;
+  license: string;
+  licenseUrl?: string;
+  sourceUrl: string;
+  title: string;
+  credit: string;
+}
+
+/**
+ * 搜索可商用配图（Wikimedia Commons）。
+ * 服务端模式走 /api/images（过滤与署名在服务端做）；
+ * 静态模式直连 Commons（CORS 开放、无需 Key）。
+ */
+export async function searchImages(query: string, limit = 12): Promise<ImageHit[]> {
+  const q = query.trim();
+  if (!q) return [];
+
+  if (isStaticBuild()) {
+    const { searchCommons, creditLine } = await import("@/lib/images/commons");
+    const hits = await searchCommons(q, limit);
+    return hits.map((h) => ({ ...h, credit: creditLine(h) }));
+  }
+
+  const res = await fetch(`/api/images?q=${encodeURIComponent(q)}&limit=${limit}`);
+  const d = (await res.json()) as { images?: ImageHit[]; error?: string };
+  if (d.error) throw new Error(d.error);
+  return d.images ?? [];
+}
+
 export { getTheme };

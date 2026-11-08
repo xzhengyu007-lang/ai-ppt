@@ -42,8 +42,9 @@ describe("版式定义自洽性", () => {
 
 describe("主题注册表", () => {
   it("恰好 12 套主题，id 唯一", () => {
-    expect(THEMES.length).toBe(12);
-    expect(new Set(THEMES.map((t) => t.id)).size).toBe(12);
+    // 12 套原创 + 从 presenton(Apache-2.0) 导入的 12 套
+    expect(THEMES.length).toBeGreaterThanOrEqual(12);
+    expect(new Set(THEMES.map((t) => t.id)).size).toBe(THEMES.length);
   });
 
   it("每套主题的 token 都通过 IR schema", () => {
@@ -75,7 +76,7 @@ describe("主题注册表", () => {
   });
 });
 
-describe("12 套主题 × 8 版式 = 96 个实例全部可渲染", () => {
+describe("每套主题 × 8 版式 全部可渲染", () => {
   it("每个组合都能解析出元素，且不越界", () => {
     let combos = 0;
     for (const theme of THEMES) {
@@ -92,7 +93,7 @@ describe("12 套主题 × 8 版式 = 96 个实例全部可渲染", () => {
         expect(hasText, `${theme.id}/${rs.layout} 没有文字`).toBe(true);
       }
     }
-    expect(combos).toBe(96);
+    expect(combos).toBe(THEMES.length * LAYOUT_IDS.length);
   });
 });
 
@@ -168,7 +169,7 @@ describe("构图语言：模板不再只是换颜色", () => {
     expect(set.size).toBeGreaterThanOrEqual(3);
   });
 
-  it("12 套模板 × 8 版式在各自构图下仍然不出界、且有可见文字", () => {
+  it("每套模板 × 8 版式在各自构图下仍然不出界、且有可见文字", () => {
     let n = 0;
     for (const t of THEMES) {
       for (const id of LAYOUT_IDS) {
@@ -187,7 +188,7 @@ describe("构图语言：模板不再只是换颜色", () => {
         n++;
       }
     }
-    expect(n).toBe(96);
+    expect(n).toBe(THEMES.length * LAYOUT_IDS.length);
   });
 
   it("不同构图确实产生不同几何（防止构图函数空转）", () => {

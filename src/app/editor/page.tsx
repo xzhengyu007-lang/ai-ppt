@@ -12,7 +12,7 @@ import { LAYOUTS } from "@/lib/layout/definitions";
 import { recommendLayouts, type SlideSpec } from "@/lib/llm/layout-assign";
 import { exportDeckPptx, exportSlidePng, downloadBlob } from "@/lib/export/client";
 import type { Slide } from "@/lib/ir/schema";
-import { getDeck, updateDeck, regenerateSlide } from "@/lib/runtime/client";
+import { getDeck, updateDeck, regenerateSlide, searchImages, type ImageHit } from "@/lib/runtime/client";
 
 function EditorInner() {
   const router = useRouter();
@@ -48,6 +48,10 @@ function EditorInner() {
   const [exportMsg, setExportMsg] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [regenBusy, setRegenBusy] = useState(false);
+  const [imageQuery, setImageQuery] = useState("");
+  const [imageHits, setImageHits] = useState<ImageHit[]>([]);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [imageErr, setImageErr] = useState<string | null>(null);
   const [canvasW, setCanvasW] = useState(880);
   const centerRef = useRef<HTMLDivElement>(null);
   const dragFrom = useRef<number | null>(null);
@@ -178,6 +182,36 @@ function EditorInner() {
     } finally {
       setRegenBusy(false);
     }
+  }
+
+  /** 图库搜索（Wikimedia Commons，返回结果已含许可证与署名） */
+  async function doSearchImages() {
+    setImageBusy(true);
+    setImageErr(null);
+    try {
+      const q = imageQuery.trim() || deck?.meta.title || "business";
+      setImageHits(await searchImages(q, 9));
+    } catch (e) {
+      setImageErr((e as Error).message);
+    } finally {
+      setImageBusy(false);
+    }
+  }
+
+  function attachImage(hit: ImageHit | null) {
+    if (!deck) return;
+    const d = structuredClone(deck);
+    d.slides[current].slots.image = hit
+      ? {
+          kind: "image",
+          src: hit.url,
+          alt: hit.title,
+          credit: hit.credit,
+          sourceUrl: hit.sourceUrl,
+          license: hit.license,
+        }
+      : { kind: "image", src: null, alt: "图片占位" };
+    useEditor.setState({ deck: d, dirty: true });
   }
 
   if (loading) {
@@ -428,6 +462,65 @@ function EditorInner() {
                 );
               })}
           </Section>
+
+          {layoutDef.slots.some((s) => s.id === "image") && (
+            <Section title="配图（Wikimedia Commons · 可商用许可）">
+              <div className="flex gap-1.5">
+                <input
+                  value={imageQuery}
+                  onChange={(e) => setImageQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") doSearchImages();
+                  }}
+                  placeholder="关键词，例如 data center"
+                  className="field h-8 flex-1 text-[12px]"
+                />
+                <button
+                  onClick={doSearchImages}
+                  disabled={imageBusy}
+                  className="btn-secondary h-8 px-2.5"
+                >
+                  {imageBusy ? "…" : "搜索"}
+                </button>
+              </div>
+
+              {imageErr && (
+                <div className="mt-1.5 text-[11px] text-[rgb(var(--danger))]">{imageErr}</div>
+              )}
+
+              {imageHits.length > 0 && (
+                <>
+                  <div className="mt-2 grid grid-cols-3 gap-1.5">
+                    {imageHits.map((h) => (
+                      <button
+                        key={h.id}
+                        onClick={() => attachImage(h)}
+                        title={`${h.license} · ${h.author}`}
+                        className="relative overflow-hidden rounded border border-line hover:border-brand"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={h.url} alt={h.title} className="h-12 w-full object-cover" />
+                        <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-1 text-[8px] text-white">
+                          {h.license}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => attachImage(null)}
+                    className="mt-1.5 text-[11px] text-muted hover:text-strong"
+                  >
+                    清除配图
+                  </button>
+                </>
+              )}
+
+              <p className="mt-1.5 text-[10.5px] leading-relaxed text-faint">
+                只显示 CC0 / 公有领域 / CC BY 系；套用后署名会写进页面下方小字。
+                静态站直连 Commons，服务端模式走 /api/images 代理。
+              </p>
+            </Section>
+          )}
 
           <Section title={`备注（${[...slide.notes].length} 字）`}>
             <textarea
