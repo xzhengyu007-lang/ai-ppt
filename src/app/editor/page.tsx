@@ -52,9 +52,18 @@ function EditorInner() {
   const [imageHits, setImageHits] = useState<ImageHit[]>([]);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageErr, setImageErr] = useState<string | null>(null);
-  const [canvasW, setCanvasW] = useState(880);
+  /** "fit" = 按容器宽高双向自适应；数字 = 用户手动缩放倍数 */
+  const [zoom, setZoom] = useState<"fit" | number>("fit");
+  const [fitW, setFitW] = useState(880);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    版式: true,
+    内容: true,
+    备注: false,
+  });
+  const toggleSection = (k: string) => setOpenSections((s) => ({ ...s, [k]: !s[k] }));
   const centerRef = useRef<HTMLDivElement>(null);
   const dragFrom = useRef<number | null>(null);
+  const canvasW = zoom === "fit" ? fitW : Math.round(1280 * zoom);
 
   // 载入草稿
   useEffect(() => {
@@ -81,16 +90,21 @@ function EditorInner() {
     };
   }, [id, init]);
 
-  // 中栏宽度自适应
+  // 中栏自适应：宽高双向取小，保证 16:9 整页可见（窗口变矮时不溢出滚动）
   useEffect(() => {
     const el = centerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
-      setCanvasW(Math.max(320, Math.min(el.clientWidth - 48, 1040)));
-    });
+    const pad = fullscreen ? 12 : 48;
+    const measure = () => {
+      const byW = el.clientWidth - pad;
+      const byH = (el.clientHeight - pad) * (16 / 9);
+      setFitW(Math.max(320, Math.min(byW, byH)));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [loading]);
+  }, [loading, fullscreen]);
 
   // 自动保存（debounce 1.5s）
   const saveNow = useCallback(async () => {
@@ -116,25 +130,46 @@ function EditorInner() {
   const slide = deck?.slides[current];
   const rs = resolved[current];
 
-  // 键盘：撤销/重做/翻页
+  // 键盘：撤销/重做/翻页/缩放。
+  // 关键：焦点在输入控件里必须完全放行——否则在右侧文本框里按方向键会切页、Ctrl+Z 会撤销整份 deck。
   useEffect(() => {
+    const isTyping = (t: EventTarget | null) => {
+      const el = t as HTMLElement | null;
+      if (!el || !el.tagName) return false;
+      return (
+        el.tagName === "INPUT" ||
+        el.tagName === "TEXTAREA" ||
+        el.tagName === "SELECT" ||
+        el.isContentEditable
+      );
+    };
     const onKey = (e: KeyboardEvent) => {
+      if (isTyping(e.target)) return;
       const meta = e.ctrlKey || e.metaKey;
-      if (meta && e.key.toLowerCase() === "z" && !e.shiftKey) {
+      const k = e.key;
+      if (meta && k.toLowerCase() === "z" && !e.shiftKey) {
         e.preventDefault();
         undo();
-      } else if (meta && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) {
+      } else if (meta && (k.toLowerCase() === "y" || (k.toLowerCase() === "z" && e.shiftKey))) {
         e.preventDefault();
         redo();
-      } else if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+      } else if (k === "Escape") {
+        setFullscreen(false);
+      } else if (k === "0") {
+        setZoom("fit");
+      } else if (k === "+" || k === "=") {
+        setZoom((z) => clampZoom((z === "fit" ? fitW / 1280 : z) + 0.1));
+      } else if (k === "-") {
+        setZoom((z) => clampZoom((z === "fit" ? fitW / 1280 : z) - 0.1));
+      } else if (k === "ArrowDown" || k === "ArrowRight") {
         if (deck) selectSlide(Math.min(current + 1, deck.slides.length - 1));
-      } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+      } else if (k === "ArrowUp" || k === "ArrowLeft") {
         selectSlide(Math.max(current - 1, 0));
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [undo, redo, deck, current, selectSlide]);
+  }, [undo, redo, deck, current, selectSlide, fitW]);
 
   async function doExportPptx() {
     if (!deck) return;
@@ -261,9 +296,9 @@ function EditorInner() {
             d.meta.title = e.target.value;
             useEditor.setState({ deck: d, dirty: true });
           }}
-          className="w-72 rounded border border-transparent px-2 py-1 text-sm font-medium hover:border-ink-100 focus:border-ink-500 focus:outline-none"
+          className="w-40 shrink-0 rounded border border-transparent px-2 py-1 text-sm font-medium hover:border-ink-100 focus:border-ink-500 focus:outline-none lg:w-72"
         />
-        <span className="text-xs text-ink-300">
+        <span className="hidden shrink-0 text-xs text-ink-300 sm:inline">
           {saving ? "保存中…" : dirty ? "未保存" : savedAt ? `已保存 ${new Date(savedAt).toLocaleTimeString("zh-CN")}` : "已保存"}
         </span>
         <div className="ml-2 flex items-center gap-1">
@@ -284,7 +319,36 @@ function EditorInner() {
             重做
           </button>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+
+        {/* 缩放：⌘/Ctrl 之外用 0 回适应、+/- 步进 */}
+        <div className="ml-3 hidden shrink-0 items-center rounded-md border border-line md:flex">
+          <button
+            onClick={() => setZoom((z) => clampZoom((z === "fit" ? fitW / 1280 : z) - 0.1))}
+            className="h-7 w-7 text-xs text-ink-500 hover:bg-ink-100"
+            title="缩小 -"
+          >
+            −
+          </button>
+          <button
+            onClick={() => setZoom("fit")}
+            className="h-7 min-w-[52px] border-x border-line px-1.5 text-[11px] tabular-nums text-ink-700 hover:bg-ink-100"
+            title="适应窗口 0"
+          >
+            {zoom === "fit" ? "适应" : `${Math.round(canvasW / 12.8)}%`}
+          </button>
+          <button
+            onClick={() => setZoom((z) => clampZoom((z === "fit" ? fitW / 1280 : z) + 0.1))}
+            className="h-7 w-7 text-xs text-ink-500 hover:bg-ink-100"
+            title="放大 +"
+          >
+            +
+          </button>
+        </div>
+
+        <span className="hidden shrink-0 text-[11px] tabular-nums text-ink-300 sm:inline">
+          {current + 1} / {deck.slides.length}
+        </span>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <button
             onClick={doExportPng}
             className="h-8 rounded-md border border-ink-100 px-3 text-xs hover:bg-ink-100"
@@ -337,27 +401,33 @@ function EditorInner() {
                 }
               }}
               onClick={() => selectSlide(i)}
-              className={`group mb-1.5 cursor-pointer rounded-control border overflow-hidden transition-all duration-150 ${
-                current === i ? "border-brand ring-2 ring-[rgb(var(--brand-soft))] shadow-sm" : "border-ink-100"
+              className={`group relative mb-1.5 cursor-pointer overflow-hidden rounded-control border transition-all duration-150 ${
+                current === i
+                  ? "border-brand ring-2 ring-[rgb(var(--brand-soft))] shadow-sm"
+                  : "border-ink-100 hover:border-ink-300"
               }`}
             >
               <div className="pointer-events-none bg-sunken">
                 <SlideFrame slide={r} scale={0.125} />
               </div>
-              <div className="flex items-center justify-between px-1.5 py-1">
-                <span className="text-[10px] text-ink-300">
-                  {i + 1} · {slide_layout_name(deck.slides[i].layout)}
+              <div className="flex items-center px-1.5 py-1">
+                <span className="truncate text-[10px] text-ink-300">
+                  {slide_layout_name(deck.slides[i].layout)}
                 </span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeSlide(i);
-                  }}
-                  className="text-[10px] text-ink-300 hover:text-red-600"
-                >
-                  删
-                </button>
               </div>
+              <span className="pointer-events-none absolute left-1 top-1 rounded-sm bg-ink-900/65 px-1 text-[9px] leading-4 tabular-nums text-white">
+                {i + 1}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeSlide(i);
+                }}
+                title="删除本页"
+                className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-sm bg-ink-900/65 text-[10px] leading-none text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-600"
+              >
+                ×
+              </button>
             </div>
           ))}
         </aside>
@@ -376,7 +446,7 @@ function EditorInner() {
 
         {/* 右：属性 */}
         <aside className="w-[348px] shrink-0 overflow-auto border-l border-line bg-card">
-          <Section title="版式">
+          <Section title={'版式'} open={!!openSections['版式']} onToggle={() => toggleSection('版式')}>
             <select
               value={slide.layout}
               onChange={(e) => setLayout(current, e.target.value as LayoutId)}
@@ -401,7 +471,7 @@ function EditorInner() {
             </div>
           </Section>
 
-          <Section title="主题">
+          <Section title={'主题'} open={!!openSections['主题']} onToggle={() => toggleSection('主题')}>
             <select
               value={deck.meta.themeId}
               onChange={(e) => setTheme(e.target.value)}
@@ -416,7 +486,7 @@ function EditorInner() {
             <p className="mt-1 text-[11px] text-ink-300">换主题只改 token，版式几何不变</p>
           </Section>
 
-          <Section title="内容">
+          <Section title={'内容'} open={!!openSections['内容']} onToggle={() => toggleSection('内容')}>
             {layoutDef.slots
               .filter((s) => s.accepts.includes("text") || s.accepts.includes("bullets"))
               .map((slot) => {
@@ -464,7 +534,11 @@ function EditorInner() {
           </Section>
 
           {layoutDef.slots.some((s) => s.id === "image") && (
-            <Section title="配图（Wikimedia Commons · 可商用许可）">
+            <Section
+            title="配图 · Wikimedia Commons"
+            open={!!openSections["配图"]}
+            onToggle={() => toggleSection("配图")}
+          >
               <div className="flex gap-1.5">
                 <input
                   value={imageQuery}
@@ -522,7 +596,11 @@ function EditorInner() {
             </Section>
           )}
 
-          <Section title={`备注（${[...slide.notes].length} 字）`}>
+          <Section
+            title={`备注 · ${[...slide.notes].length} 字`}
+            open={!!openSections["备注"]}
+            onToggle={() => toggleSection("备注")}
+          >
             <textarea
               value={slide.notes}
               onChange={(e) => setNotes(current, e.target.value)}
@@ -536,7 +614,7 @@ function EditorInner() {
             )}
           </Section>
 
-          <Section title="本页操作">
+          <Section title={'本页操作'} open={!!openSections['操作']} onToggle={() => toggleSection('操作')}>
             <button
               onClick={regenerate}
               disabled={regenBusy}
@@ -547,7 +625,11 @@ function EditorInner() {
           </Section>
 
           {rs.warnings.length > 0 && (
-            <Section title={`提示（${rs.warnings.length}）`}>
+            <Section
+            title={`提示 · ${rs.warnings.length}`}
+            open={!!openSections["提示"]}
+            onToggle={() => toggleSection("提示")}
+          >
               <ul className="space-y-1">
                 {rs.warnings.map((w, i) => (
                   <li key={i} className="rounded bg-amber-50 px-2 py-1 text-[11px] text-amber-800">
@@ -563,15 +645,48 @@ function EditorInner() {
   );
 }
 
+const clampZoom = (z: number) => Math.min(2, Math.max(0.25, Math.round(z * 100) / 100));
+
 function slide_layout_name(l: string) {
   return LAYOUTS[l as LayoutId]?.name ?? l;
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  open,
+  onToggle,
+}: {
+  title: string;
+  children: React.ReactNode;
+  open?: boolean;
+  onToggle?: () => void;
+}) {
+  const collapsible = onToggle !== undefined;
+  const shown = !collapsible || open;
   return (
-    <div className="border-b border-line px-4 py-3.5">
-      <div className="mb-2 section-label">{title}</div>
-      {children}
+    <div className="border-b border-line">
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={!collapsible}
+        aria-expanded={collapsible ? !!open : undefined}
+        className={`flex w-full items-center gap-1.5 px-4 py-2.5 text-left ${
+          collapsible ? "hover:bg-ink-50" : "cursor-default"
+        }`}
+      >
+        <span className="section-label flex-1">{title}</span>
+        {collapsible && (
+          <span
+            className={`text-[9px] text-ink-300 transition-transform duration-150 ${
+              open ? "rotate-90" : ""
+            }`}
+          >
+            ▶
+          </span>
+        )}
+      </button>
+      {shown && <div className="px-4 pb-3.5">{children}</div>}
     </div>
   );
 }
